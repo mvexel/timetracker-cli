@@ -2,6 +2,8 @@
 
 A simple command line time tracking tool for developers.
 
+![Demo](demo/timetracker-demo.gif)
+
 ## Installation
 
 ```bash
