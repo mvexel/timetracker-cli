@@ -5,7 +5,7 @@ const TimeTracker = require("../lib/timetracker");
 
 const tracker = new TimeTracker();
 
-program.name("tt").description("Time tracking CLI tool").version("2.0.0");
+program.name("tt").description("Time tracking CLI tool").version("2.1.0");
 
 program
   .command("start <project>")
