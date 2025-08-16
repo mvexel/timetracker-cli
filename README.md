@@ -99,12 +99,23 @@ tt delete 3
 tt delete 1 month
 ```
 
+### Status
+```bash
+tt status
+```
+
+This will output the current session info. Useful for prompt integration as well, see below.
+
 ## Data Storage
 
 Time tracking data is stored in your home directory at `~/.timetracker/`:
 - `state.json`: Current tracking session state
 - `timetracker.csv`: Historical time entries
 
+
+## Prompt integration
+
+To remind you of your active tracking session, you may want to add the `tt` status to your prompt. We have some [instructions](PROMPT_INTEGRATION.md) for popular shells and prompts.
 
 ## License
 

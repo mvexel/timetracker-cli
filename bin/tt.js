@@ -86,6 +86,18 @@ program
     }
   });
 
+program
+  .command("status")
+  .description("Show current tracking status for prompt integration")
+  .action(async () => {
+    try {
+      await tracker.status();
+    } catch (error) {
+      // For prompt integration, we want to fail silently
+      process.exit(0);
+    }
+  });
+
 program.parseAsync().catch((error) => {
   console.error(`Error: ${error.message}`);
   process.exit(1);
