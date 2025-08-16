@@ -147,4 +147,123 @@ describe("TimeTracker", () => {
     
     assert.ok(firstEntryIndex < secondEntryIndex, "Entries should be sorted chronologically");
   });
+
+  describe("Delete functionality", () => {
+    it("should show row numbers in logs output", async () => {
+      await tracker.log("project-a", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
+      await tracker.log("project-b", { duration: 60, date: "2025-08-16T13:00:00.000Z" });
+
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      await tracker.logs("day", "2025-08-16T14:00:00.000Z");
+
+      console.log = log;
+
+      assert.ok(output.includes("[1] project-a"));
+      assert.ok(output.includes("[2] project-b"));
+    });
+
+    it("should get all log entries", async () => {
+      await tracker.log("project-a", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
+      await tracker.log("project-b", { duration: 60, date: "2025-08-16T13:00:00.000Z" });
+
+      const entries = await tracker.getAllLogEntries();
+      
+      assert.strictEqual(entries.length, 2);
+      assert.strictEqual(entries[0].project, "project-a");
+      assert.strictEqual(entries[1].project, "project-b");
+      assert.strictEqual(entries[0].duration, 30);
+      assert.strictEqual(entries[1].duration, 60);
+    });
+
+    it("should get log entries for a specific period", async () => {
+      await tracker.log("old-project", { duration: 30, date: "2025-08-01T12:00:00.000Z" });
+      await tracker.log("new-project", { duration: 60, date: "2025-08-16T13:00:00.000Z" });
+
+      const entries = await tracker.getLogEntriesForPeriod("day", "2025-08-16T14:00:00.000Z");
+      
+      assert.strictEqual(entries.length, 1);
+      assert.strictEqual(entries[0].project, "new-project");
+    });
+
+    it("should delete an entry by index", async () => {
+      await tracker.log("project-a", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
+      await tracker.log("project-b", { duration: 60, date: "2025-08-16T13:00:00.000Z" });
+      await tracker.log("project-c", { duration: 45, date: "2025-08-16T14:00:00.000Z" });
+
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      const result = await tracker.deleteEntry(2, "day", "2025-08-16T15:00:00.000Z");
+
+      console.log = log;
+
+      assert.strictEqual(result, true);
+      assert.ok(output.includes("Deleted entry: project-b"));
+
+      const remainingEntries = await tracker.getAllLogEntries();
+      assert.strictEqual(remainingEntries.length, 2);
+      assert.strictEqual(remainingEntries[0].project, "project-a");
+      assert.strictEqual(remainingEntries[1].project, "project-c");
+    });
+
+    it("should handle invalid index when deleting", async () => {
+      await tracker.log("project-a", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
+
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      const result = await tracker.deleteEntry(5, "day", "2025-08-16T15:00:00.000Z");
+
+      console.log = log;
+
+      assert.strictEqual(result, false);
+      assert.ok(output.includes("Invalid index"));
+
+      const entries = await tracker.getAllLogEntries();
+      assert.strictEqual(entries.length, 1);
+    });
+
+    it("should handle deleting from empty logs", async () => {
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      const result = await tracker.deleteEntry(1, "day", "2025-08-16T15:00:00.000Z");
+
+      console.log = log;
+
+      assert.strictEqual(result, false);
+      assert.ok(output.includes("Invalid index"));
+    });
+
+    it("should preserve CSV header after deletion", async () => {
+      await tracker.log("project-a", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
+      
+      await tracker.deleteEntry(1, "day", "2025-08-16T15:00:00.000Z");
+
+      const logContent = await fs.readFile(tracker.logFile, "utf8");
+      const lines = logContent.trim().split("\n");
+      
+      assert.strictEqual(lines[0], "project,start_time,end_time,duration_minutes");
+      assert.strictEqual(lines.length, 1);
+    });
+
+    it("should delete correct entry when multiple entries have same project name", async () => {
+      await tracker.log("project-a", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
+      await tracker.log("project-a", { duration: 60, date: "2025-08-16T13:00:00.000Z" });
+      await tracker.log("project-a", { duration: 45, date: "2025-08-16T14:00:00.000Z" });
+
+      await tracker.deleteEntry(2, "day", "2025-08-16T15:00:00.000Z");
+
+      const remainingEntries = await tracker.getAllLogEntries();
+      assert.strictEqual(remainingEntries.length, 2);
+      assert.strictEqual(remainingEntries[0].duration, 30);
+      assert.strictEqual(remainingEntries[1].duration, 45);
+    });
+  });
 });
