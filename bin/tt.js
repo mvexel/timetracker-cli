@@ -10,22 +10,22 @@ program.name("tt").description("Time tracking CLI tool").version("1.0.0");
 program
   .command("start <project>")
   .description("Start tracking time for a project")
-  .action((project) => {
-    tracker.start(project);
+  .action(async (project) => {
+    await tracker.start(project);
   });
 
 program
   .command("stop")
   .description("Stop tracking time")
-  .action(() => {
-    tracker.stop();
+  .action(async () => {
+    await tracker.stop();
   });
 
 program
   .command("summary <period>")
   .description("Show time summary (day|week|month)")
-  .action((period) => {
-    tracker.summary(period);
+  .action(async (period) => {
+    await tracker.summary(period);
   });
 
 program
@@ -36,8 +36,15 @@ program
     "--time <time>",
     "Start time (HH:MM format, defaults to now minus duration)",
   )
-  .action((project_name, duration, options) => {
-    tracker.log(project_name, { ...options, duration: parseInt(duration) });
+  .action(async (project_name, duration, options) => {
+    await tracker.log(project_name, { ...options, duration: parseInt(duration) });
   });
 
-program.parse();
+program
+  .command("logs <period>")
+  .description("Show log entries for a time period (day|week|month)")
+  .action(async (period) => {
+    await tracker.logs(period);
+  });
+
+program.parseAsync();

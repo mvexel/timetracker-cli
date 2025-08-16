@@ -1,6 +1,6 @@
 {
   "name": "timetracker-cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A simple command line time tracking tool for developers",
   "main": "lib/timetracker.js",
   "bin": {
@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node bin/tt.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "keywords": [
     "time",
@@ -42,5 +42,8 @@
   "dependencies": {
     "commander": "^9.0.0",
     "csv-writer": "^1.6.0"
+  },
+  "devDependencies": {
+    "mocha": "^11.7.1"
   }
 }
