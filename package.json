@@ -1,0 +1,46 @@
+{
+  "name": "timetracker-cli",
+  "version": "1.0.0",
+  "description": "A simple command line time tracking tool for developers",
+  "main": "lib/timetracker.js",
+  "bin": {
+    "tt": "./bin/tt.js"
+  },
+  "scripts": {
+    "start": "node bin/tt.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "time",
+    "tracking",
+    "cli",
+    "productivity",
+    "timer",
+    "timesheet",
+    "developer",
+    "workflow"
+  ],
+  "author": "Martijn van Exel <mvexel@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mvexel/timetracker-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mvexel/timetracker-cli/issues"
+  },
+  "homepage": "https://github.com/mvexel/timetracker-cli#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "commander": "^9.0.0",
+    "csv-writer": "^1.6.0"
+  }
+}
