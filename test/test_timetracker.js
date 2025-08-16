@@ -44,6 +44,48 @@ describe("TimeTracker", () => {
     assert.strictEqual(parseInt(duration, 10), 30);
   });
 
+  it("should handle missing duration in log function", async () => {
+    // Capture console.log output
+    let output = "";
+    const log = console.log;
+    console.log = (msg) => (output += msg + "\n");
+
+    await tracker.log("test-project", {});
+
+    // Restore console.log
+    console.log = log;
+
+    assert.strictEqual(output.trim(), "Error: duration is required");
+  });
+
+  it("should handle negative duration in log function", async () => {
+    // Capture console.log output
+    let output = "";
+    const log = console.log;
+    console.log = (msg) => (output += msg + "\n");
+
+    await tracker.log("test-project", { duration: -30 });
+
+    // Restore console.log
+    console.log = log;
+
+    assert.strictEqual(output.trim(), "Error: Duration must be positive");
+  });
+
+  it("should handle zero duration in log function", async () => {
+    // Capture console.log output
+    let output = "";
+    const log = console.log;
+    console.log = (msg) => (output += msg + "\n");
+
+    await tracker.log("test-project", { duration: 0 });
+
+    // Restore console.log
+    console.log = log;
+
+    assert.strictEqual(output.trim(), "Error: Duration must be positive");
+  });
+
   it("should provide a daily summary", async () => {
     await tracker.log("test-project", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
     await tracker.log("another-project", { duration: 60, date: "2025-08-16T13:00:00.000Z" });
@@ -73,6 +115,58 @@ describe("TimeTracker", () => {
     assert.deepStrictEqual(anotherProject, { project: 'another-project', duration: '1h 0m' });
     assert.deepStrictEqual(testProject, { project: 'test-project', duration: '30m' });
     assert.strictEqual(totalLine, "Total: 1h 30m");
+  });
+
+  it("should provide a summary for all time", async () => {
+    await tracker.log("old-project", { duration: 45, date: "2025-07-01T12:00:00.000Z" });
+    await tracker.log("recent-project", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
+    await tracker.log("another-project", { duration: 60, date: "2025-08-16T13:00:00.000Z" });
+
+    // Capture console.log output
+    let output = "";
+    const log = console.log;
+    console.log = (msg) => (output += msg + "\n");
+
+    await tracker.summary("all", "2025-08-16T14:00:00.000Z");
+
+    // Restore console.log
+    console.log = log;
+
+    const lines = output.trim().split("\n");
+    
+    // Check that the header shows "All Time"
+    assert.ok(output.includes("Time Summary - All Time:"));
+    
+    const summaryLines = lines.slice(lines.indexOf("===============================") + 1, lines.indexOf("--------------------------------"));
+
+    const summaryData = summaryLines.map(line => {
+      const [project, duration] = line.split(": ");
+      return { project, duration };
+    });
+
+    const anotherProject = summaryData.find(d => d.project === "another-project");
+    const recentProject = summaryData.find(d => d.project === "recent-project");
+    const oldProject = summaryData.find(d => d.project === "old-project");
+    const totalLine = lines[lines.length - 1];
+
+    assert.deepStrictEqual(anotherProject, { project: 'another-project', duration: '1h 0m' });
+    assert.deepStrictEqual(recentProject, { project: 'recent-project', duration: '30m' });
+    assert.deepStrictEqual(oldProject, { project: 'old-project', duration: '45m' });
+    assert.strictEqual(totalLine, "Total: 2h 15m");
+  });
+
+  it("should handle invalid period in summary command", async () => {
+    // Capture console.log output
+    let output = "";
+    const log = console.log;
+    console.log = (msg) => (output += msg + "\n");
+
+    await tracker.summary("invalid");
+
+    // Restore console.log
+    console.log = log;
+
+    assert.strictEqual(output.trim(), "Invalid period. Use: day, week, month, or all");
   });
 
   it("should show logs for a time period", async () => {
@@ -106,7 +200,7 @@ describe("TimeTracker", () => {
     // Restore console.log
     console.log = log;
 
-    assert.strictEqual(output.trim(), "Invalid period. Use: day, week, or month");
+    assert.strictEqual(output.trim(), "Invalid period. Use: day, week, month, or all");
   });
 
   it("should show no entries when no logs exist for period", async () => {

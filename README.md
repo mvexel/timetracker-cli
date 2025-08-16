@@ -27,7 +27,7 @@ tt log <project_name> <duration_in_minutes>
 
 **Options:**
 - `--day <date>`: Specify the day (YYYY-MM-DD format, defaults to today)
-- `--time <time>`: Specify the end time (HH:MM format, defaults to current time)
+- `--time <time>`: Specify the end time (HH:MM format, defaults to current time when no day is given)
 
 **Examples:**
 ```bash
@@ -50,6 +50,7 @@ Where `<period>` can be:
 - `day`: Today's summary
 - `week`: This week's summary
 - `month`: This month's summary
+- `all`: All time summary (default)
 
 ### Interactive log browser
 ```bash

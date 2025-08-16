@@ -31,19 +31,19 @@ program
 program
   .command("log <project_name> <duration>")
   .description("Log time entry for a project")
-  .option("--day <date>", "Start day (YYYY-MM-DD format, defaults to today)")
+  .option("--day <date>", "Specify the day (YYYY-MM-DD format, defaults to today)")
   .option(
     "--time <time>",
-    "Start time (HH:MM format, defaults to now minus duration)",
+    "End time (HH:MM format, defaults to current time when no day is given)",
   )
   .action(async (project_name, duration, options) => {
     await tracker.log(project_name, { ...options, duration: parseInt(duration) });
   });
 
 program
-  .command("logs <period>")
-  .description("Show log entries for a time period (day|week|month)")
-  .action(async (period) => {
+  .command("logs [period]")
+  .description("Show log entries for a time period (day|week|month|all, defaults to all)")
+  .action(async (period = "all") => {
     await tracker.logs(period);
   });
 
