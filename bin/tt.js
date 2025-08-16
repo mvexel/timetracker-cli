@@ -5,7 +5,7 @@ const TimeTracker = require("../lib/timetracker");
 
 const tracker = new TimeTracker();
 
-program.name("tt").description("Time tracking CLI tool").version("1.0.0");
+program.name("tt").description("Time tracking CLI tool").version("1.0.4");
 
 program
   .command("start <project>")
@@ -22,9 +22,9 @@ program
   });
 
 program
-  .command("summary <period>")
-  .description("Show time summary (day|week|month)")
-  .action(async (period) => {
+  .command("summary [period]")
+  .description("Show time summary (day|week|month|all, defaults to all)")
+  .action(async (period = "all") => {
     await tracker.summary(period);
   });
 
