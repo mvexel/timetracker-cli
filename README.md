@@ -51,6 +51,32 @@ Where `<period>` can be:
 - `week`: This week's summary
 - `month`: This month's summary
 
+### Interactive log browser
+```bash
+tt logs <period>
+```
+
+Opens an interactive browser showing time entries for the specified period (day, week, or month).
+
+**Interactive controls:**
+- `↑/↓` Arrow keys: Navigate through entries
+- `d`: Delete the currently selected entry (with confirmation)
+- `q`: Quit the interactive browser
+
+**Examples:**
+```bash
+# Browse entries for this month interactively
+tt logs month
+
+# Browse entries for this week interactively  
+tt logs week
+
+# Browse entries for today interactively
+tt logs day
+```
+
+The interactive browser shows entries with visual highlighting and allows you to scroll through long lists. When you press 'd' to delete an entry, you'll be asked to confirm before the deletion.
+
 ## Data Storage
 
 Time tracking data is stored in your home directory at `~/.timetracker/`:
@@ -60,10 +86,12 @@ Time tracking data is stored in your home directory at `~/.timetracker/`:
 ## Features
 
 - Simple start/stop time tracking
-- Manual time entry logging
+- Manual time entry logging with flexible date/time options
 - Project-based time organization
 - CSV data export format
 - Daily/weekly/monthly summaries
+- Interactive log browser with scrolling navigation
+- Delete entries directly from the interactive interface
 - Prevents overlapping sessions
 - Human-readable duration formatting
 

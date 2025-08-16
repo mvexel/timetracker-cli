@@ -1,6 +1,6 @@
 {
   "name": "timetracker-cli",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "A simple command line time tracking tool for developers",
   "main": "lib/timetracker.js",
   "bin": {
