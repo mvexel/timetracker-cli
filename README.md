@@ -5,7 +5,7 @@ A simple command line time tracking tool for developers.
 ## Installation
 
 ```bash
-npm install -g timetracker-cli
+npm install -g @mvexel/timetracker-cli
 ```
 
 ## Usage
@@ -14,6 +14,8 @@ npm install -g timetracker-cli
 ```bash
 tt start <project_name>
 ```
+
+Project name is required.
 
 ### Stop tracking time
 ```bash
@@ -25,12 +27,17 @@ tt stop
 tt log <project_name> <duration_in_minutes>
 ```
 
+Both project name and duration are required.
+
 **Options:**
 - `--day <date>`: Specify the day (YYYY-MM-DD format, defaults to today)
 - `--time <time>`: Specify the end time (HH:MM format, defaults to current time when no day is given)
 
 **Examples:**
 ```bash
+# Start tracking a project
+tt start my-project
+
 # Log 30 minutes for "my-project" ending now
 tt log my-project 30
 
@@ -41,42 +48,54 @@ tt log website 45 --time 15:30
 tt log app 60 --day 2025-08-15 --time 14:00
 ```
 
-### View time summary
+### View time tracking summary by project
 ```bash
-tt summary <period>
+tt summary [period]
 ```
 
-Where `<period>` can be:
+Where `[period]` can be:
 - `day`: Today's summary
 - `week`: This week's summary
 - `month`: This month's summary
 - `all`: All time summary (default)
 
-### Interactive log browser
+### View log entries
 ```bash
-tt logs <period>
+tt logs [period]
 ```
 
-Opens an interactive browser showing time entries for the specified period (day, week, or month).
-
-**Interactive controls:**
-- `↑/↓` Arrow keys: Navigate through entries
-- `d`: Delete the currently selected entry (with confirmation)
-- `q`: Quit the interactive browser
+Shows time entries for the specified period (day, week, month, or all).
 
 **Examples:**
 ```bash
-# Browse entries for this month interactively
+# Show entries for this month
 tt logs month
 
-# Browse entries for this week interactively  
+# Show entries for this week
 tt logs week
 
-# Browse entries for today interactively
+# Show entries for today
 tt logs day
+
+# Show all entries
+tt logs all
 ```
 
-The interactive browser shows entries with visual highlighting and allows you to scroll through long lists. When you press 'd' to delete an entry, you'll be asked to confirm before the deletion.
+### Delete log entries
+```bash
+tt delete <index> [period]
+```
+
+Delete a specific entry by its index number (as shown in `tt logs`). Period defaults to "all".
+
+**Examples:**
+```bash
+# Delete entry #3 from all entries
+tt delete 3
+
+# Delete entry #1 from this month's entries
+tt delete 1 month
+```
 
 ## Data Storage
 
@@ -84,17 +103,6 @@ Time tracking data is stored in your home directory at `~/.timetracker/`:
 - `state.json`: Current tracking session state
 - `timetracker.csv`: Historical time entries
 
-## Features
-
-- Simple start/stop time tracking
-- Manual time entry logging with flexible date/time options
-- Project-based time organization
-- CSV data export format
-- Daily/weekly/monthly summaries
-- Interactive log browser with scrolling navigation
-- Delete entries directly from the interactive interface
-- Prevents overlapping sessions
-- Human-readable duration formatting
 
 ## License
 

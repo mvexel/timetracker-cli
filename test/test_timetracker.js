@@ -34,61 +34,75 @@ describe("TimeTracker", () => {
     assert.ok(logContent.includes("test-project"));
   });
 
+  it("should require project name for start", async () => {
+    try {
+      await tracker.start();
+      assert.fail("Should have thrown error");
+    } catch (error) {
+      assert.strictEqual(error.message, "Project name is required");
+    }
+  });
+
+  it("should prevent starting when already tracking", async () => {
+    await tracker.start("test-project");
+    try {
+      await tracker.start("another-project");
+      assert.fail("Should have thrown error");
+    } catch (error) {
+      assert.ok(error.message.includes("Already tracking project"));
+    }
+  });
+
   it("should log a time entry", async () => {
-    await tracker.log("test-project", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
+    await tracker.log("test-project", 30, { date: "2025-08-16T12:00:00.000Z" });
     const logContent = await fs.readFile(tracker.logFile, "utf8");
     const lines = logContent.trim().split("\n");
     const lastLine = lines[lines.length - 1];
-    const [project, , , duration] = lastLine.split(",");
+    const [project, startTime, endTime] = lastLine.split(",");
     assert.strictEqual(project, "test-project");
-    assert.strictEqual(parseInt(duration, 10), 30);
+    const calculatedDuration = Math.round((new Date(endTime) - new Date(startTime)) / (1000 * 60));
+    assert.strictEqual(calculatedDuration, 30);
   });
 
-  it("should handle missing duration in log function", async () => {
-    // Capture console.log output
-    let output = "";
-    const log = console.log;
-    console.log = (msg) => (output += msg + "\n");
+  it("should require project name for log", async () => {
+    try {
+      await tracker.log(null, 30);
+      assert.fail("Should have thrown error");
+    } catch (error) {
+      assert.strictEqual(error.message, "Project name is required");
+    }
+  });
 
-    await tracker.log("test-project", {});
-
-    // Restore console.log
-    console.log = log;
-
-    assert.strictEqual(output.trim(), "Error: duration is required");
+  it("should require duration for log", async () => {
+    try {
+      await tracker.log("test-project");
+      assert.fail("Should have thrown error");
+    } catch (error) {
+      assert.strictEqual(error.message, "Duration in minutes is required and must be a number");
+    }
   });
 
   it("should handle negative duration in log function", async () => {
-    // Capture console.log output
-    let output = "";
-    const log = console.log;
-    console.log = (msg) => (output += msg + "\n");
-
-    await tracker.log("test-project", { duration: -30 });
-
-    // Restore console.log
-    console.log = log;
-
-    assert.strictEqual(output.trim(), "Error: Duration must be positive");
+    try {
+      await tracker.log("test-project", -30);
+      assert.fail("Should have thrown error");
+    } catch (error) {
+      assert.strictEqual(error.message, "Duration must be positive");
+    }
   });
 
   it("should handle zero duration in log function", async () => {
-    // Capture console.log output
-    let output = "";
-    const log = console.log;
-    console.log = (msg) => (output += msg + "\n");
-
-    await tracker.log("test-project", { duration: 0 });
-
-    // Restore console.log
-    console.log = log;
-
-    assert.strictEqual(output.trim(), "Error: Duration must be positive");
+    try {
+      await tracker.log("test-project", 0);
+      assert.fail("Should have thrown error");
+    } catch (error) {
+      assert.strictEqual(error.message, "Duration must be positive");
+    }
   });
 
   it("should provide a daily summary", async () => {
-    await tracker.log("test-project", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
-    await tracker.log("another-project", { duration: 60, date: "2025-08-16T13:00:00.000Z" });
+    await tracker.log("test-project", 30, { date: "2025-08-16T12:00:00.000Z" });
+    await tracker.log("another-project", 60, { date: "2025-08-16T13:00:00.000Z" });
 
     // Capture console.log output
     let output = "";
@@ -118,9 +132,9 @@ describe("TimeTracker", () => {
   });
 
   it("should provide a summary for all time", async () => {
-    await tracker.log("old-project", { duration: 45, date: "2025-07-01T12:00:00.000Z" });
-    await tracker.log("recent-project", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
-    await tracker.log("another-project", { duration: 60, date: "2025-08-16T13:00:00.000Z" });
+    await tracker.log("old-project", 45, { date: "2025-07-01T12:00:00.000Z" });
+    await tracker.log("recent-project", 30, { date: "2025-08-16T12:00:00.000Z" });
+    await tracker.log("another-project", 60, { date: "2025-08-16T13:00:00.000Z" });
 
     // Capture console.log output
     let output = "";
@@ -156,22 +170,17 @@ describe("TimeTracker", () => {
   });
 
   it("should handle invalid period in summary command", async () => {
-    // Capture console.log output
-    let output = "";
-    const log = console.log;
-    console.log = (msg) => (output += msg + "\n");
-
-    await tracker.summary("invalid");
-
-    // Restore console.log
-    console.log = log;
-
-    assert.strictEqual(output.trim(), "Invalid period. Use: day, week, month, or all");
+    try {
+      await tracker.summary("invalid");
+      assert.fail("Should have thrown error");
+    } catch (error) {
+      assert.strictEqual(error.message, "Invalid period. Use: day, week, month, or all");
+    }
   });
 
   it("should show logs for a time period", async () => {
-    await tracker.log("test-project", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
-    await tracker.log("another-project", { duration: 60, date: "2025-08-16T13:00:00.000Z" });
+    await tracker.log("test-project", 30, { date: "2025-08-16T12:00:00.000Z" });
+    await tracker.log("another-project", 60, { date: "2025-08-16T13:00:00.000Z" });
 
     // Capture console.log output
     let output = "";
@@ -190,17 +199,12 @@ describe("TimeTracker", () => {
   });
 
   it("should handle invalid period in logs command", async () => {
-    // Capture console.log output
-    let output = "";
-    const log = console.log;
-    console.log = (msg) => (output += msg + "\n");
-
-    await tracker.logs("invalid");
-
-    // Restore console.log
-    console.log = log;
-
-    assert.strictEqual(output.trim(), "Invalid period. Use: day, week, month, or all");
+    try {
+      await tracker.logs("invalid");
+      assert.fail("Should have thrown error");
+    } catch (error) {
+      assert.strictEqual(error.message, "Invalid period. Use: day, week, month, or all");
+    }
   });
 
   it("should show no entries when no logs exist for period", async () => {
@@ -219,8 +223,8 @@ describe("TimeTracker", () => {
   });
 
   it("should sort log entries chronologically", async () => {
-    await tracker.log("project-b", { duration: 30, date: "2025-08-16T14:00:00.000Z" });
-    await tracker.log("project-a", { duration: 60, date: "2025-08-16T12:00:00.000Z" });
+    await tracker.log("project-b", 30, { date: "2025-08-16T14:00:00.000Z" });
+    await tracker.log("project-a", 60, { date: "2025-08-16T12:00:00.000Z" });
 
     // Capture console.log output
     let output = "";
@@ -244,8 +248,8 @@ describe("TimeTracker", () => {
 
   describe("Delete functionality", () => {
     it("should show row numbers in logs output", async () => {
-      await tracker.log("project-a", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
-      await tracker.log("project-b", { duration: 60, date: "2025-08-16T13:00:00.000Z" });
+      await tracker.log("project-a", 30, { date: "2025-08-16T12:00:00.000Z" });
+      await tracker.log("project-b", 60, { date: "2025-08-16T13:00:00.000Z" });
 
       let output = "";
       const log = console.log;
@@ -260,8 +264,8 @@ describe("TimeTracker", () => {
     });
 
     it("should get all log entries", async () => {
-      await tracker.log("project-a", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
-      await tracker.log("project-b", { duration: 60, date: "2025-08-16T13:00:00.000Z" });
+      await tracker.log("project-a", 30, { date: "2025-08-16T12:00:00.000Z" });
+      await tracker.log("project-b", 60, { date: "2025-08-16T13:00:00.000Z" });
 
       const entries = await tracker.getAllLogEntries();
       
@@ -273,8 +277,8 @@ describe("TimeTracker", () => {
     });
 
     it("should get log entries for a specific period", async () => {
-      await tracker.log("old-project", { duration: 30, date: "2025-08-01T12:00:00.000Z" });
-      await tracker.log("new-project", { duration: 60, date: "2025-08-16T13:00:00.000Z" });
+      await tracker.log("old-project", 30, { date: "2025-08-01T12:00:00.000Z" });
+      await tracker.log("new-project", 60, { date: "2025-08-16T13:00:00.000Z" });
 
       const entries = await tracker.getLogEntriesForPeriod("day", "2025-08-16T14:00:00.000Z");
       
@@ -283,9 +287,9 @@ describe("TimeTracker", () => {
     });
 
     it("should delete an entry by index", async () => {
-      await tracker.log("project-a", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
-      await tracker.log("project-b", { duration: 60, date: "2025-08-16T13:00:00.000Z" });
-      await tracker.log("project-c", { duration: 45, date: "2025-08-16T14:00:00.000Z" });
+      await tracker.log("project-a", 30, { date: "2025-08-16T12:00:00.000Z" });
+      await tracker.log("project-b", 60, { date: "2025-08-16T13:00:00.000Z" });
+      await tracker.log("project-c", 45, { date: "2025-08-16T14:00:00.000Z" });
 
       let output = "";
       const log = console.log;
@@ -305,52 +309,44 @@ describe("TimeTracker", () => {
     });
 
     it("should handle invalid index when deleting", async () => {
-      await tracker.log("project-a", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
+      await tracker.log("project-a", 30, { date: "2025-08-16T12:00:00.000Z" });
 
-      let output = "";
-      const log = console.log;
-      console.log = (msg) => (output += msg + "\n");
-
-      const result = await tracker.deleteEntry(5, "day", "2025-08-16T15:00:00.000Z");
-
-      console.log = log;
-
-      assert.strictEqual(result, false);
-      assert.ok(output.includes("Invalid index"));
+      try {
+        await tracker.deleteEntry(5, "day", "2025-08-16T15:00:00.000Z");
+        assert.fail("Should have thrown error");
+      } catch (error) {
+        assert.ok(error.message.includes("Invalid index"));
+      }
 
       const entries = await tracker.getAllLogEntries();
       assert.strictEqual(entries.length, 1);
     });
 
     it("should handle deleting from empty logs", async () => {
-      let output = "";
-      const log = console.log;
-      console.log = (msg) => (output += msg + "\n");
-
-      const result = await tracker.deleteEntry(1, "day", "2025-08-16T15:00:00.000Z");
-
-      console.log = log;
-
-      assert.strictEqual(result, false);
-      assert.ok(output.includes("Invalid index"));
+      try {
+        await tracker.deleteEntry(1, "day", "2025-08-16T15:00:00.000Z");
+        assert.fail("Should have thrown error");
+      } catch (error) {
+        assert.ok(error.message.includes("Invalid index"));
+      }
     });
 
     it("should preserve CSV header after deletion", async () => {
-      await tracker.log("project-a", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
+      await tracker.log("project-a", 30, { date: "2025-08-16T12:00:00.000Z" });
       
       await tracker.deleteEntry(1, "day", "2025-08-16T15:00:00.000Z");
 
       const logContent = await fs.readFile(tracker.logFile, "utf8");
       const lines = logContent.trim().split("\n");
       
-      assert.strictEqual(lines[0], "project,start_time,end_time,duration_minutes");
+      assert.strictEqual(lines[0], "project,start_time,end_time");
       assert.strictEqual(lines.length, 1);
     });
 
     it("should delete correct entry when multiple entries have same project name", async () => {
-      await tracker.log("project-a", { duration: 30, date: "2025-08-16T12:00:00.000Z" });
-      await tracker.log("project-a", { duration: 60, date: "2025-08-16T13:00:00.000Z" });
-      await tracker.log("project-a", { duration: 45, date: "2025-08-16T14:00:00.000Z" });
+      await tracker.log("project-a", 30, { date: "2025-08-16T12:00:00.000Z" });
+      await tracker.log("project-a", 60, { date: "2025-08-16T13:00:00.000Z" });
+      await tracker.log("project-a", 45, { date: "2025-08-16T14:00:00.000Z" });
 
       await tracker.deleteEntry(2, "day", "2025-08-16T15:00:00.000Z");
 
