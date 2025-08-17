@@ -12,99 +12,153 @@ npm install -g @mvexel/timetracker-cli
 
 ## Usage
 
-### Start tracking time for a project
+### Basic Time Tracking
+
 ```bash
+# Start tracking a project (auto-creates project)
 tt start <project_name>
-```
 
-Project name is required.
-
-### Stop tracking time
-```bash
+# Stop tracking current session
 tt stop
-```
 
-### Log a time entry manually
-```bash
-tt log <project_name> <duration_in_minutes>
-```
-
-Both project name and duration are required.
-
-**Options:**
-- `--day <date>`: Specify the day (YYYY-MM-DD format, defaults to today)
-- `--time <time>`: Specify the end time (HH:MM format, defaults to current time when no day is given)
-
-**Examples:**
-```bash
-# Start tracking a project
-tt start my-project
-
-# Log 30 minutes for "my-project" ending now
-tt log my-project 30
-
-# Log 45 minutes for "website" ending at 3:30 PM today
-tt log website 45 --time 15:30
-
-# Log 60 minutes for "app" ending at 2:00 PM on a specific date
-tt log app 60 --day 2025-08-15 --time 14:00
-```
-
-### View time tracking summary by project
-```bash
-tt summary [period]
-```
-
-Where `[period]` can be:
-- `day`: Today's summary
-- `week`: This week's summary
-- `month`: This month's summary
-- `all`: All time summary (default)
-
-### View log entries
-```bash
-tt logs [period]
-```
-
-Shows time entries for the specified period (day, week, month, or all).
-
-**Examples:**
-```bash
-# Show entries for this month
-tt logs month
-
-# Show entries for this week
-tt logs week
-
-# Show entries for today
-tt logs day
-
-# Show all entries
-tt logs all
-```
-
-### Delete log entries
-```bash
-tt delete <index> [period]
-```
-
-Delete a specific entry by its index number (as shown in `tt logs`). Period defaults to "all".
-
-**Examples:**
-```bash
-# Delete entry #3 from all entries
-tt delete 3
-
-# Delete entry #1 from this month's entries
-tt delete 1 month
-```
-
-### Status
-```bash
+# Show current tracking status
 tt status
 ```
 
-This will output the current session info. Useful for prompt integration as well, see below.
+### Manual Logging
+
+```bash
+# Log time for a project (duration in minutes)
+tt log <project_name> <duration_in_minutes>
+
+# Log with specific end time
+tt log myproject 120 --time 16:30
+
+# Log for specific day
+tt log myproject 60 --day 2024-01-15 --time 14:00
+```
+
+### Viewing Data
+
+```bash
+# Show time summary for all projects
+tt summary [period]
+
+# Show summary for specific project
+tt summary --project myproject
+
+# Show log entries
+tt logs [period]
+
+# Available periods: day, week, month, all (default: all)
+```
+
+### Project Management
+
+```bash
+# List all projects with stats
+tt projects
+
+# Delete project and all its entries
+tt project delete myproject
+```
+
+### Deleting Entries
+
+```bash
+# Delete by index (legacy method)
+tt delete 3
+
+# Delete by project and time range
+tt delete --project myproject --last     # Most recent entry
+tt delete --project myproject --today    # All today's entries
+tt delete --project myproject --week     # This week's entries
+tt delete --project myproject --month    # This month's entries
+
+# Delete by time range only (all projects)
+tt delete --last      # Most recent entry
+tt delete --today     # All today's entries
+tt delete --week      # This week's entries
+tt delete --month     # This month's entries
+```
+
+### JSON Output
+
+All commands support JSON output for integration and automation:
+
+```bash
+# Get structured data for any command
+tt summary --json
+tt logs week --json
+tt projects --json
+tt status --json
+
+# Operations also return JSON confirmations
+tt start myproject --json
+tt stop --json
+tt log myproject 60 --json
+tt delete --project test --last --json
+```
+
+## Examples
+
+### Daily Workflow
+
+```bash
+# Morning: start work
+tt start client-website
+
+# Afternoon: switch projects
+tt stop
+tt start internal-tools
+
+# End of day: stop tracking
+tt stop
+
+# Check today's work
+tt summary day
+```
+
+### Manual Entry
+
+```bash
+# Log yesterday's forgotten work
+tt log client-website 180 --day 2024-01-14 --time 17:00
+
+# Log morning work that wasn't tracked
+tt log documentation 90 --time 11:30
+```
+
+### Project Management
+
+```bash
+# See all projects
+tt projects
+
+# Check specific project summary
+tt summary --project client-website
+
+# Clean up old test project
+tt project delete test-project
+```
+
+### JSON Integration
+
+```bash
+# Get project data for dashboards
+tt projects --json | jq '.projects.list[] | select(.total_minutes > 60)'
+
+# Export weekly summary 
+tt summary week --json > weekly-report.json
+
+# Check tracking status in scripts
+if [ "$(tt status --json | jq -r '.status.tracking')" = "true" ]; then
+  echo "Currently tracking: $(tt status --json | jq -r '.status.project')"
+fi
+
+# Automated time logging
+tt log "$(git rev-parse --abbrev-ref HEAD)" 30 --json
+```
 
 ## Data Storage
 

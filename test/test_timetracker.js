@@ -1,8 +1,8 @@
-const assert = require("assert");
-const fs = require("fs").promises;
-const path = require("path");
-const os = require("os");
-const TimeTracker = require("../lib/timetracker");
+import assert from "assert";
+import fs from "fs/promises";
+import path from "path";
+import os from "os";
+import { TimeTracker } from "../lib/TimeTracker.js";
 
 describe("TimeTracker", () => {
   const testDir = path.join(os.homedir(), ".timetracker-test");
@@ -187,7 +187,7 @@ describe("TimeTracker", () => {
     const log = console.log;
     console.log = (msg) => (output += msg + "\n");
 
-    await tracker.logs("day", "2025-08-16T14:00:00.000Z");
+    await tracker.logs("day", {}, "2025-08-16T14:00:00.000Z");
 
     // Restore console.log
     console.log = log;
@@ -213,13 +213,67 @@ describe("TimeTracker", () => {
     const log = console.log;
     console.log = (msg) => (output += msg + "\n");
 
-    await tracker.logs("day", "2025-08-16T14:00:00.000Z");
+    await tracker.logs("day", {}, "2025-08-16T14:00:00.000Z");
 
     // Restore console.log
     console.log = log;
 
     assert.ok(output.includes("Log Entries - Last day:"));
     assert.ok(output.includes("No entries found for this period."));
+  });
+
+  it("should output logs in JSON format when --json option is used", async () => {
+    await tracker.log("test-project", 30, { date: "2025-08-16T12:00:00.000Z" });
+    await tracker.log("another-project", 60, { date: "2025-08-16T13:00:00.000Z" });
+
+    // Capture console.log output
+    let output = "";
+    const log = console.log;
+    console.log = (msg) => (output += msg + "\n");
+
+    await tracker.logs("day", { json: true }, "2025-08-16T14:00:00.000Z");
+
+    // Restore console.log
+    console.log = log;
+
+    const jsonOutput = JSON.parse(output.trim());
+    
+    assert.strictEqual(jsonOutput.logs.period, "day");
+    assert.strictEqual(jsonOutput.logs.total_minutes, 90);
+    assert.strictEqual(jsonOutput.logs.entries.length, 2);
+    
+    const firstEntry = jsonOutput.logs.entries[0];
+    const secondEntry = jsonOutput.logs.entries[1];
+    
+    assert.strictEqual(firstEntry.index, 1);
+    assert.strictEqual(firstEntry.project, "test-project");
+    assert.strictEqual(firstEntry.duration_minutes, 30);
+    assert.ok(firstEntry.start_time);
+    assert.ok(firstEntry.end_time);
+    
+    assert.strictEqual(secondEntry.index, 2);
+    assert.strictEqual(secondEntry.project, "another-project");
+    assert.strictEqual(secondEntry.duration_minutes, 60);
+    assert.ok(secondEntry.start_time);
+    assert.ok(secondEntry.end_time);
+  });
+
+  it("should output empty JSON when no entries exist and --json option is used", async () => {
+    // Capture console.log output
+    let output = "";
+    const log = console.log;
+    console.log = (msg) => (output += msg + "\n");
+
+    await tracker.logs("day", { json: true }, "2025-08-16T14:00:00.000Z");
+
+    // Restore console.log
+    console.log = log;
+
+    const jsonOutput = JSON.parse(output.trim());
+    
+    assert.strictEqual(jsonOutput.logs.period, "day");
+    assert.strictEqual(jsonOutput.logs.total_minutes, 0);
+    assert.strictEqual(jsonOutput.logs.entries.length, 0);
   });
 
   it("should sort log entries chronologically", async () => {
@@ -231,7 +285,7 @@ describe("TimeTracker", () => {
     const log = console.log;
     console.log = (msg) => (output += msg + "\n");
 
-    await tracker.logs("day", "2025-08-16T15:00:00.000Z");
+    await tracker.logs("day", {}, "2025-08-16T15:00:00.000Z");
 
     // Restore console.log
     console.log = log;
@@ -255,7 +309,7 @@ describe("TimeTracker", () => {
       const log = console.log;
       console.log = (msg) => (output += msg + "\n");
 
-      await tracker.logs("day", "2025-08-16T14:00:00.000Z");
+      await tracker.logs("day", {}, "2025-08-16T14:00:00.000Z");
 
       console.log = log;
 
@@ -354,6 +408,287 @@ describe("TimeTracker", () => {
       assert.strictEqual(remainingEntries.length, 2);
       assert.strictEqual(remainingEntries[0].duration, 30);
       assert.strictEqual(remainingEntries[1].duration, 45);
+    });
+  });
+
+  describe("Project management", () => {
+    it("should list all projects with stats", async () => {
+      await tracker.log("project-a", 30, { date: "2025-08-16T12:00:00.000Z" });
+      await tracker.log("project-b", 60, { date: "2025-08-16T13:00:00.000Z" });
+      await tracker.log("project-a", 45, { date: "2025-08-17T12:00:00.000Z" });
+
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      await tracker.listProjects();
+
+      console.log = log;
+
+      assert.ok(output.includes("Projects:"));
+      assert.ok(output.includes("project-a: 1h 15m (2 entries"));
+      assert.ok(output.includes("project-b: 1h 0m (1 entries"));
+    });
+
+    it("should handle empty project list", async () => {
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      await tracker.listProjects();
+
+      console.log = log;
+
+      assert.ok(output.includes("No projects found."));
+    });
+
+    it("should delete a project and all its entries", async () => {
+      await tracker.log("project-a", 30, { date: "2025-08-16T12:00:00.000Z" });
+      await tracker.log("project-b", 60, { date: "2025-08-16T13:00:00.000Z" });
+      await tracker.log("project-a", 45, { date: "2025-08-17T12:00:00.000Z" });
+
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      await tracker.deleteProject("project-a");
+
+      console.log = log;
+
+      assert.ok(output.includes('Deleted project "project-a" and 2 entries'));
+
+      const remainingEntries = await tracker.getAllLogEntries();
+      assert.strictEqual(remainingEntries.length, 1);
+      assert.strictEqual(remainingEntries[0].project, "project-b");
+    });
+
+    it("should handle deleting non-existent project", async () => {
+      try {
+        await tracker.deleteProject("non-existent");
+        assert.fail("Should have thrown error");
+      } catch (error) {
+        assert.ok(error.message.includes('Project "non-existent" not found'));
+      }
+    });
+
+    it("should show project-specific summary", async () => {
+      await tracker.log("project-a", 30, { date: "2025-08-16T12:00:00.000Z" });
+      await tracker.log("project-b", 60, { date: "2025-08-16T13:00:00.000Z" });
+      await tracker.log("project-a", 45, { date: "2025-08-17T12:00:00.000Z" });
+
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      await tracker.summary("all", null, { project: "project-a" });
+
+      console.log = log;
+
+      assert.ok(output.includes("Time Summary - All Time (project-a):"));
+      assert.ok(output.includes("project-a: 1h 15m"));
+      assert.ok(!output.includes("project-b"));
+      assert.ok(output.includes("Total: 1h 15m"));
+    });
+  });
+
+  describe("Project-based deletion", () => {
+    beforeEach(async () => {
+      await tracker.log("project-a", 30, { date: "2025-08-16T12:00:00.000Z" });
+      await tracker.log("project-b", 60, { date: "2025-08-16T13:00:00.000Z" });
+      await tracker.log("project-a", 45, { date: "2025-08-17T12:00:00.000Z" });
+      await tracker.log("project-c", 20, { date: "2025-08-17T14:00:00.000Z" });
+    });
+
+    it("should delete last entry for specific project", async () => {
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      await tracker.deleteByProject({ project: "project-a", last: true });
+
+      console.log = log;
+
+      assert.ok(output.includes("Deleted entry: project-a: 45m"));
+
+      const remainingEntries = await tracker.getAllLogEntries();
+      assert.strictEqual(remainingEntries.length, 3);
+      
+      const projectAEntries = remainingEntries.filter(e => e.project === "project-a");
+      assert.strictEqual(projectAEntries.length, 1);
+      assert.strictEqual(projectAEntries[0].duration, 30);
+    });
+
+    it("should delete all entries for today for specific project", async () => {
+      // Create a mock for current date to be 2025-08-17
+      const originalDate = Date;
+      global.Date = class extends Date {
+        constructor(...args) {
+          if (args.length === 0) {
+            super("2025-08-17T15:00:00.000Z");
+          } else {
+            super(...args);
+          }
+        }
+        static now() {
+          return new originalDate("2025-08-17T15:00:00.000Z").getTime();
+        }
+      };
+
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      await tracker.deleteByProject({ project: "project-a", today: true });
+
+      console.log = log;
+      global.Date = originalDate;
+
+      const remainingEntries = await tracker.getAllLogEntries();
+      const projectAEntries = remainingEntries.filter(e => e.project === "project-a");
+      
+      // Should still have the entry from 2025-08-16 but not from today (2025-08-17)
+      assert.strictEqual(projectAEntries.length, 1);
+      assert.strictEqual(projectAEntries[0].duration, 30);
+    });
+
+    it("should delete last entry regardless of project", async () => {
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      await tracker.deleteByProject({ last: true });
+
+      console.log = log;
+
+      assert.ok(output.includes("Deleted entry: project-c: 20m"));
+
+      const remainingEntries = await tracker.getAllLogEntries();
+      assert.strictEqual(remainingEntries.length, 3);
+      assert.ok(!remainingEntries.some(e => e.project === "project-c"));
+    });
+
+    it("should handle no matching entries for project filter", async () => {
+      try {
+        await tracker.deleteByProject({ project: "non-existent", last: true });
+        assert.fail("Should have thrown error");
+      } catch (error) {
+        assert.ok(error.message.includes("No entries found for project matching: non-existent"));
+      }
+    });
+
+    it("should delete multiple entries and show summary", async () => {
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      await tracker.deleteByProject({ project: "project-a" });
+
+      console.log = log;
+
+      assert.ok(output.includes("Deleted 2 entries (1h 15m total)"));
+      assert.ok(output.includes("- project-a: 30m"));
+      assert.ok(output.includes("- project-a: 45m"));
+
+      const remainingEntries = await tracker.getAllLogEntries();
+      assert.strictEqual(remainingEntries.length, 2);
+      assert.ok(!remainingEntries.some(e => e.project === "project-a"));
+    });
+  });
+
+  describe("JSON output", () => {
+    it("should output summary in JSON format", async () => {
+      await tracker.log("project-a", 30, { date: "2025-08-16T12:00:00.000Z" });
+      await tracker.log("project-b", 60, { date: "2025-08-16T13:00:00.000Z" });
+
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      await tracker.summary("day", "2025-08-16T14:00:00.000Z", { json: true });
+
+      console.log = log;
+
+      const jsonOutput = JSON.parse(output.trim());
+      
+      assert.strictEqual(jsonOutput.summary.period, "day");
+      assert.strictEqual(jsonOutput.summary.total_minutes, 90);
+      assert.strictEqual(jsonOutput.summary.projects.length, 2);
+      assert.strictEqual(jsonOutput.summary.projects[0].name, "project-b");
+      assert.strictEqual(jsonOutput.summary.projects[0].duration_minutes, 60);
+    });
+
+    it("should output projects list in JSON format", async () => {
+      await tracker.log("project-a", 30, { date: "2025-08-16T12:00:00.000Z" });
+      await tracker.log("project-b", 60, { date: "2025-08-16T13:00:00.000Z" });
+
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      await tracker.listProjects({ json: true });
+
+      console.log = log;
+
+      const jsonOutput = JSON.parse(output.trim());
+      
+      assert.strictEqual(jsonOutput.projects.total_projects, 2);
+      assert.strictEqual(jsonOutput.projects.total_minutes, 90);
+      assert.ok(jsonOutput.projects.list.length === 2);
+      assert.ok(jsonOutput.projects.list.every(p => p.name && typeof p.total_minutes === 'number'));
+    });
+
+    it("should output status in JSON format when tracking", async () => {
+      await tracker.start("test-project");
+
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      await tracker.status({ json: true });
+
+      console.log = log;
+
+      const jsonOutput = JSON.parse(output.trim());
+      
+      assert.strictEqual(jsonOutput.status.tracking, true);
+      assert.strictEqual(jsonOutput.status.project, "test-project");
+      assert.ok(typeof jsonOutput.status.duration_minutes === 'number');
+      assert.ok(jsonOutput.status.started_at);
+    });
+
+    it("should output status in JSON format when not tracking", async () => {
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      await tracker.status({ json: true });
+
+      console.log = log;
+
+      const jsonOutput = JSON.parse(output.trim());
+      
+      assert.strictEqual(jsonOutput.status.tracking, false);
+      assert.strictEqual(jsonOutput.status.project, null);
+      assert.strictEqual(jsonOutput.status.duration_minutes, 0);
+    });
+
+    it("should output deletion result in JSON format", async () => {
+      await tracker.log("project-a", 30, { date: "2025-08-16T12:00:00.000Z" });
+
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      await tracker.deleteEntry(1, "day", "2025-08-16T15:00:00.000Z", { json: true });
+
+      console.log = log;
+
+      const jsonOutput = JSON.parse(output.trim());
+      
+      assert.strictEqual(jsonOutput.deletion.type, "entries");
+      assert.strictEqual(jsonOutput.deletion.deleted_count, 1);
+      assert.strictEqual(jsonOutput.deletion.total_minutes_deleted, 30);
+      assert.ok(jsonOutput.deletion.deleted_entries.length === 1);
     });
   });
 });
