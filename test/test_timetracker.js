@@ -409,6 +409,7 @@ describe("TimeTracker", () => {
       assert.strictEqual(remainingEntries[0].duration, 30);
       assert.strictEqual(remainingEntries[1].duration, 45);
     });
+
   });
 
   describe("Project management", () => {
