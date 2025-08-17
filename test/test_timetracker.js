@@ -691,4 +691,67 @@ describe("TimeTracker", () => {
       assert.ok(jsonOutput.deletion.deleted_entries.length === 1);
     });
   });
+
+  describe("Export functionality", () => {
+    it("should export all data in CSV format", async () => {
+      await tracker.log("project-a", 30, { date: "2025-08-16T12:00:00.000Z" });
+      await tracker.log("project-b", 60, { date: "2025-08-16T13:00:00.000Z" });
+      await tracker.log("project-a", 45, { date: "2025-08-17T14:00:00.000Z" });
+
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      await tracker.export();
+
+      console.log = log;
+
+      const lines = output.trim().split("\n");
+      
+      assert.strictEqual(lines[0], "project,start_time,end_time");
+      assert.strictEqual(lines.length, 4); // header + 3 entries
+      
+      assert.ok(lines[1].startsWith("project-a,"));
+      assert.ok(lines[2].startsWith("project-b,"));
+      assert.ok(lines[3].startsWith("project-a,"));
+    });
+
+    it("should export only header when no entries exist", async () => {
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      await tracker.export();
+
+      console.log = log;
+
+      const lines = output.trim().split("\n");
+      
+      assert.strictEqual(lines[0], "project,start_time,end_time");
+      assert.strictEqual(lines.length, 1);
+    });
+
+    it("should export entries in chronological order", async () => {
+      await tracker.log("project-b", 30, { date: "2025-08-17T14:00:00.000Z" });
+      await tracker.log("project-a", 60, { date: "2025-08-16T12:00:00.000Z" });
+
+      let output = "";
+      const log = console.log;
+      console.log = (msg) => (output += msg + "\n");
+
+      await tracker.export();
+
+      console.log = log;
+
+      const lines = output.trim().split("\n");
+      
+      // First entry should be the earlier one (project-a from 2025-08-16)
+      assert.ok(lines[1].startsWith("project-a,"));
+      assert.ok(lines[1].includes("2025-08-16"));
+      
+      // Second entry should be the later one (project-b from 2025-08-17)
+      assert.ok(lines[2].startsWith("project-b,"));
+      assert.ok(lines[2].includes("2025-08-17"));
+    });
+  });
 });

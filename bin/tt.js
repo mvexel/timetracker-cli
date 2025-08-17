@@ -5,7 +5,7 @@ import { TimeTracker } from "../lib/TimeTracker.js";
 
 const tracker = new TimeTracker();
 
-program.name("tt").description("Time tracking CLI tool").version("2.2.0");
+program.name("tt").description("Time tracking CLI tool").version("2.3.0");
 
 program
   .command("start <project>")
@@ -152,6 +152,18 @@ program
     } catch (error) {
       // For prompt integration, we want to fail silently
       process.exit(0);
+    }
+  });
+
+program
+  .command("export")
+  .description("Export all time tracking data as CSV to stdout")
+  .action(async () => {
+    try {
+      await tracker.export();
+    } catch (error) {
+      console.error(`Error: ${error.message}`);
+      process.exit(1);
     }
   });
 
