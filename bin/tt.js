@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { program } from "commander";
-import { TimeTracker } from "../lib/TimeTracker.js";
+import { TimeTracker } from "../lib/timetracker.js";
 
 const tracker = new TimeTracker();
 
@@ -113,6 +113,7 @@ program
   .command("projects")
   .description("List all projects")
   .option("--json", "Output in JSON format")
+  .option("--raw", "Output project names only (for shell completion)")
   .action(async (options) => {
     try {
       await tracker.listProjects(options);

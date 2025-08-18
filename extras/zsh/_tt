@@ -59,7 +59,8 @@ _tt() {
           ;;
         projects)
           _arguments \
-            '--json[output in JSON format]'
+            '--json[output in JSON format]' \
+            '--raw[output project names only (for shell completion)]'
           ;;
         project)
           _arguments \
@@ -98,8 +99,8 @@ _tt_commands() {
 
 _tt_projects() {
   local projects
-  # Try to get projects from tt projects command, fallback to empty if it fails
-  projects=(${(f)"$(tt projects 2>/dev/null | grep -v '^Projects:' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' 2>/dev/null || echo '')"})
+  # Use --raw option to get just project names for completion
+  projects=(${(f)"$(tt projects --raw 2>/dev/null || echo '')"})
   if [[ ${#projects[@]} -gt 0 ]]; then
     _describe 'projects' projects
   fi
