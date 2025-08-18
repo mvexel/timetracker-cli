@@ -166,18 +166,6 @@ program
     }
   });
 
-program
-  .command("migrate")
-  .description("Migrate old time-based format to new session-based format")
-  .action(async () => {
-    try {
-      await tracker.migrate();
-      console.log("Migration completed successfully");
-    } catch (error) {
-      console.error(`Error: ${error.message}`);
-      process.exit(1);
-    }
-  });
 
 program.parseAsync().catch((error) => {
   console.error(`Error: ${error.message}`);
