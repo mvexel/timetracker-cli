@@ -5,7 +5,7 @@ import { TimeTracker } from "../lib/TimeTracker.js";
 
 const tracker = new TimeTracker();
 
-program.name("tt").description("A simple command line time tracking tool for developers").version("3.0.0");
+program.name("tt").description("A simple command line time tracking tool for developers").version("3.0.1");
 
 program
   .command("start <project> [description]")
