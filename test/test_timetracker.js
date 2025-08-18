@@ -43,25 +43,28 @@ describe("TimeTracker", () => {
     }
   });
 
-  it("should prevent starting when already tracking", async () => {
+  it("should auto-stop when starting a new project", async () => {
     await tracker.start("test-project");
-    try {
-      await tracker.start("another-project");
-      assert.fail("Should have thrown error");
-    } catch (error) {
-      assert.ok(error.message.includes("Already tracking project"));
-    }
+    
+    // This should auto-stop the first project and start the second
+    await tracker.start("another-project");
+    
+    let state = await tracker.getState();
+    assert.strictEqual(state.project, "another-project");
+
+    const logContent = await fs.readFile(tracker.logFile, "utf8");
+    assert.ok(logContent.includes("test-project"));
   });
 
   it("should log a time entry", async () => {
-    await tracker.log("test-project", 30, { date: "2025-08-16T12:00:00.000Z" });
+    await tracker.log("test-project", 30, null, { day: "2025-08-16" });
     const logContent = await fs.readFile(tracker.logFile, "utf8");
     const lines = logContent.trim().split("\n");
     const lastLine = lines[lines.length - 1];
-    const [project, startTime, endTime] = lastLine.split(",");
+    const [project, date, duration] = lastLine.split(",");
     assert.strictEqual(project, "test-project");
-    const calculatedDuration = Math.round((new Date(endTime) - new Date(startTime)) / (1000 * 60));
-    assert.strictEqual(calculatedDuration, 30);
+    assert.strictEqual(date, "2025-08-16");
+    assert.strictEqual(parseInt(duration), 30);
   });
 
   it("should require project name for log", async () => {
@@ -393,7 +396,7 @@ describe("TimeTracker", () => {
       const logContent = await fs.readFile(tracker.logFile, "utf8");
       const lines = logContent.trim().split("\n");
       
-      assert.strictEqual(lines[0], "project,start_time,end_time");
+      assert.ok(lines[0].includes("project,date,duration_minutes"));
       assert.strictEqual(lines.length, 1);
     });
 
@@ -709,7 +712,7 @@ describe("TimeTracker", () => {
 
       const lines = output.trim().split("\n");
       
-      assert.strictEqual(lines[0], "project,start_time,end_time");
+      assert.ok(lines[0].includes("project,date,duration_minutes"));
       assert.strictEqual(lines.length, 4); // header + 3 entries
       
       assert.ok(lines[1].startsWith("project-a,"));
@@ -728,7 +731,7 @@ describe("TimeTracker", () => {
 
       const lines = output.trim().split("\n");
       
-      assert.strictEqual(lines[0], "project,start_time,end_time");
+      assert.ok(lines[0].includes("project,date,duration_minutes"));
       assert.strictEqual(lines.length, 1);
     });
 

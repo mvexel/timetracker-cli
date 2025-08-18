@@ -1,6 +1,6 @@
 {
   "name": "@mvexel/timetracker-cli",
-  "version": "2.3.1",
+  "version": "3.0.0",
   "description": "A simple command line time tracking tool for developers",
   "type": "module",
   "main": "lib/TimeTracker.js",
