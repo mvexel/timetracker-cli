@@ -5,15 +5,16 @@ import { TimeTracker } from "../lib/TimeTracker.js";
 
 const tracker = new TimeTracker();
 
-program.name("tt").description("Time tracking CLI tool").version("2.3.1");
+program.name("tt").description("A simple command line time tracking tool for developers").version("3.0.0");
 
 program
-  .command("start <project>")
+  .command("start <project> [description]")
   .description("Start tracking time for a project")
   .option("--json", "Output in JSON format")
-  .action(async (project, options) => {
+  .option("--no-round", "Disable 15-minute rounding")
+  .action(async (project, description, options) => {
     try {
-      await tracker.start(project, options);
+      await tracker.start(project, description, options);
     } catch (error) {
       console.error(`Error: ${error.message}`);
       process.exit(1);
@@ -24,6 +25,7 @@ program
   .command("stop")
   .description("Stop tracking time")
   .option("--json", "Output in JSON format")
+  .option("--no-round", "Disable 15-minute rounding")
   .action(async (options) => {
     try {
       await tracker.stop(options);
@@ -48,21 +50,17 @@ program
   });
 
 program
-  .command("log <project_name> <duration>")
+  .command("log <project_name> <duration> [description]")
   .description("Log time entry for a project (duration in minutes)")
   .option(
     "--day <date>",
     "Specify the day (YYYY-MM-DD format, defaults to today)",
   )
-  .option(
-    "--time <time>",
-    "End time (HH:MM format, defaults to current time when no day is given)",
-  )
   .option("--json", "Output in JSON format")
-  .action(async (project_name, duration, options) => {
+  .action(async (project_name, duration, description, options) => {
     try {
       const parsedDuration = parseInt(duration);
-      await tracker.log(project_name, parsedDuration, options);
+      await tracker.log(project_name, parsedDuration, description, options);
     } catch (error) {
       console.error(`Error: ${error.message}`);
       process.exit(1);
@@ -74,9 +72,10 @@ program
   .description(
     "Show log entries for a time period (day|week|month|all, defaults to all)",
   )
-  .option(
-    "--json",
-    "Output in JSON format")
+  .option("--json", "Output in JSON format")
+  .option("--sessions-only", "Show only start/stop sessions")
+  .option("--manual-only", "Show only manual log entries")
+  .option("--with-descriptions", "Show only entries with descriptions")
   .action(async (period = "all", options) => {
     try {
       await tracker.logs(period, options);
@@ -161,6 +160,19 @@ program
   .action(async () => {
     try {
       await tracker.export();
+    } catch (error) {
+      console.error(`Error: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command("migrate")
+  .description("Migrate old time-based format to new session-based format")
+  .action(async () => {
+    try {
+      await tracker.migrate();
+      console.log("Migration completed successfully");
     } catch (error) {
       console.error(`Error: ${error.message}`);
       process.exit(1);

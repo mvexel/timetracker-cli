@@ -16,7 +16,10 @@ npm install -g @mvexel/timetracker-cli
 
 ```bash
 # Start tracking a project (auto-creates project)
-tt start <project_name>
+tt start <project_name> [description]
+
+# Start with description
+tt start client-website "fixing responsive layout"
 
 # Stop tracking current session
 tt stop
@@ -25,17 +28,18 @@ tt stop
 tt status
 ```
 
+
 ### Manual Logging
 
 ```bash
 # Log time for a project (duration in minutes)
-tt log <project_name> <duration_in_minutes>
+tt log <project_name> <duration_in_minutes> [description]
 
-# Log with specific end time
-tt log myproject 120 --time 16:30
+# Log with description
+tt log myproject 120 "code review session"
 
 # Log for specific day
-tt log myproject 60 --day 2024-01-15 --time 14:00
+tt log myproject 60 "bug fixes" --day 2024-01-15
 ```
 
 ### Viewing Data
@@ -49,6 +53,15 @@ tt summary --project myproject
 
 # Show log entries
 tt logs [period]
+
+# Show only session entries (start/stop)
+tt logs --sessions-only
+
+# Show only manual entries
+tt logs --manual-only
+
+# Show only entries with descriptions
+tt logs --with-descriptions
 
 # Available periods: day, week, month, all (default: all)
 ```
@@ -121,12 +134,11 @@ tt delete --project test --last --json
 ### Daily Workflow
 
 ```bash
-# Morning: start work
-tt start client-website
+# Morning: start work with description
+tt start client-website "implementing user dashboard"
 
-# Afternoon: switch projects
-tt stop
-tt start internal-tools
+# Afternoon: switch projects (auto-stops previous)
+tt start internal-tools "code review and testing"
 
 # End of day: stop tracking
 tt stop
@@ -139,10 +151,13 @@ tt summary day
 
 ```bash
 # Log yesterday's forgotten work
-tt log client-website 180 --day 2024-01-14 --time 17:00
+tt log client-website 180 "bug fixes" --day 2024-01-14
 
-# Log morning work that wasn't tracked
-tt log documentation 90 --time 11:30
+# Log morning work that wasn't tracked  
+tt log documentation 90 "writing API docs"
+
+# Log precise time (no rounding on manual entries)
+tt log meeting 37 "client standup"
 ```
 
 ### Project Management
@@ -182,8 +197,17 @@ tt log "$(git rev-parse --abbrev-ref HEAD)" 30 --json
 ## Data Storage
 
 Time tracking data is stored in your home directory at `~/.timetracker/`:
-- `state.json`: Current tracking session state
-- `timetracker.csv`: Historical time entries
+- `state.json`: Current tracking session state  
+- `timetracker.csv`: Session entries with date, duration, description, and session ID
+
+## Migration
+
+If you have data in the old time-based format, run:
+```bash
+tt migrate
+```
+
+This converts your existing data to the new session-based format while preserving all information.
 
 
 ## Prompt integration
