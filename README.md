@@ -93,22 +93,9 @@ tt delete --month     # This month's entries
 
 ### Data Export
 
-Export all time tracking data as CSV to stdout for backup or integration:
-
 ```bash
 # Export to file
 tt export > backup.csv
-
-# Pipe to other tools
-tt export | grep "project-name"
-tt export | head -10
-tt projects --json | jq '.projects.list[] | select(.total_minutes > 60)'
-
-# Upload to cloud storage
-tt export | aws s3 cp - s3://bucket/timetracker.csv
-
-# Export weekly summary 
-tt summary week --json > weekly-report.json
 ```
 
 ### `zsh` integration
