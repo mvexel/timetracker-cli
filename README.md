@@ -23,9 +23,6 @@ tt start client-website "fixing responsive layout"
 
 # Stop tracking current session
 tt stop
-
-# Show current tracking status
-tt status
 ```
 
 
@@ -43,6 +40,8 @@ tt log myproject 60 "bug fixes" --day 2024-01-15
 ```
 
 ### Viewing Data
+
+Most of these support a `--json` parameter.
 
 ```bash
 # Show time summary for all projects
@@ -73,20 +72,17 @@ tt logs --with-descriptions
 tt projects
 
 # Delete project and all its entries
-tt project delete myproject
+tt project delete myproject. # this is the same as tt delete --project myproject
 ```
 
 ### Deleting Entries
 
-```bash
-# Delete by index (legacy method)
-tt delete 3
+You can delete entries by project, time range, or a combination of both. You can also manually edit the log file.
 
+```bash
 # Delete by project and time range
 tt delete --project myproject --last     # Most recent entry
 tt delete --project myproject --today    # All today's entries
-tt delete --project myproject --week     # This week's entries
-tt delete --project myproject --month    # This month's entries
 
 # Delete by time range only (all projects)
 tt delete --last      # Most recent entry
@@ -106,113 +102,42 @@ tt export > backup.csv
 # Pipe to other tools
 tt export | grep "project-name"
 tt export | head -10
+tt projects --json | jq '.projects.list[] | select(.total_minutes > 60)'
 
 # Upload to cloud storage
 tt export | aws s3 cp - s3://bucket/timetracker.csv
-```
-
-### JSON Output
-
-All commands support JSON output for integration and automation:
-
-```bash
-# Get structured data for any command
-tt summary --json
-tt logs week --json
-tt projects --json
-tt status --json
-
-# Operations also return JSON confirmations
-tt start myproject --json
-tt stop --json
-tt log myproject 60 --json
-tt delete --project test --last --json
-```
-
-## Examples
-
-### Daily Workflow
-
-```bash
-# Morning: start work with description
-tt start client-website "implementing user dashboard"
-
-# Afternoon: switch projects (auto-stops previous)
-tt start internal-tools "code review and testing"
-
-# End of day: stop tracking
-tt stop
-
-# Check today's work
-tt summary day
-```
-
-### Manual Entry
-
-```bash
-# Log yesterday's forgotten work
-tt log client-website 180 "bug fixes" --day 2024-01-14
-
-# Log morning work that wasn't tracked  
-tt log documentation 90 "writing API docs"
-
-# Log precise time (no rounding on manual entries)
-tt log meeting 37 "client standup"
-```
-
-### Project Management
-
-```bash
-# See all projects
-tt projects
-
-# Check specific project summary
-tt summary --project client-website
-
-# Clean up old test project
-tt project delete test-project
-```
-
-### Data Export and Integration
-
-```bash
-# Backup all data
-tt export > ~/backups/timetracker-$(date +%Y%m%d).csv
-
-# Get project data for dashboards
-tt projects --json | jq '.projects.list[] | select(.total_minutes > 60)'
 
 # Export weekly summary 
 tt summary week --json > weekly-report.json
-
-# Check tracking status in scripts
-if [ "$(tt status --json | jq -r '.status.tracking')" = "true" ]; then
-  echo "Currently tracking: $(tt status --json | jq -r '.status.project')"
-fi
-
-# Automated time logging
-tt log "$(git rev-parse --abbrev-ref HEAD)" 30 --json
 ```
+
+### `zsh` integration
+
+I don't use bash, if you do, please submit :)
+
+#### Prompt
+
+Add this to your `~/.zshrc` to add your current session to your prompt
+
+timetracker_prompt() {
+  local tt_status=$(tt status 2>/dev/null)
+  if [[ -n "$tt_status" ]]; then
+    echo "%F{yellow}$tt_status%f "
+  fi
+}
+setopt PROMPT_SUBST
+PROMPT='$(timetracker_prompt)%F{blue}%~%f $ '
+
+#### Completions
+
+There's a completions function in `extras/zsh` you can use. This provides completions for the subcommands and options as well as project names. 
+
 
 ## Data Storage
 
 Time tracking data is stored in your home directory at `~/.timetracker/`:
 - `state.json`: Current tracking session state  
 - `timetracker.csv`: Session entries with date, duration, description, and session ID
-
-## Migration
-
-If you have data in the old time-based format, run:
-```bash
-tt migrate
-```
-
-This converts your existing data to the new session-based format while preserving all information.
-
-
-## Prompt integration
-
-To remind you of your active tracking session, you may want to add the `tt` status to your prompt. We have some [instructions](PROMPT_INTEGRATION.md) for popular shells and prompts.
 
 ## License
 

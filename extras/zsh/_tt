@@ -1,0 +1,108 @@
+#compdef tt
+
+_tt() {
+  local context state state_descr line
+  typeset -A opt_args
+
+  _arguments -C \
+    '(-h --help)'{-h,--help}'[show help information]' \
+    '(-V --version)'{-V,--version}'[show version number]' \
+    '1: :_tt_commands' \
+    '*:: :->args'
+
+  case $state in
+    args)
+      case $words[1] in
+        start)
+          _arguments \
+            '--json[output in JSON format]' \
+            '--no-round[disable 15-minute rounding]' \
+            '1:project:_tt_projects' \
+            '2:description:'
+          ;;
+        stop)
+          _arguments \
+            '--json[output in JSON format]' \
+            '--no-round[disable 15-minute rounding]'
+          ;;
+        summary)
+          _arguments \
+            '--project[show summary for specific project]:project:_tt_projects' \
+            '--json[output in JSON format]' \
+            '1:period:(day week month all)'
+          ;;
+        log)
+          _arguments \
+            '--day[specify the day (YYYY-MM-DD format)]:date:' \
+            '--json[output in JSON format]' \
+            '1:project:_tt_projects' \
+            '2:duration (minutes):' \
+            '3:description:'
+          ;;
+        logs)
+          _arguments \
+            '--json[output in JSON format]' \
+            '--sessions-only[show only start/stop sessions]' \
+            '--manual-only[show only manual log entries]' \
+            '--with-descriptions[show only entries with descriptions]' \
+            '1:period:(day week month all)'
+          ;;
+        delete)
+          _arguments \
+            '--project[delete entries for specific project]:project:_tt_projects' \
+            '--last[delete the most recent entry]' \
+            '--today[delete entries from today]' \
+            '--week[delete entries from this week]' \
+            '--month[delete entries from this month]' \
+            '1:index:' \
+            '2:period:(day week month all)'
+          ;;
+        projects)
+          _arguments \
+            '--json[output in JSON format]'
+          ;;
+        project)
+          _arguments \
+            '--json[output in JSON format]' \
+            '1:action:(delete)' \
+            '2:name:_tt_projects'
+          ;;
+        status)
+          _arguments \
+            '--json[output in JSON format]'
+          ;;
+        export)
+          # no arguments for export
+          ;;
+      esac
+      ;;
+  esac
+}
+
+_tt_commands() {
+  local commands
+  commands=(
+    'start:Start tracking time for a project'
+    'stop:Stop tracking time'
+    'summary:Show time summary'
+    'log:Log time entry for a project'
+    'logs:Show log entries for a time period'
+    'delete:Delete log entries'
+    'projects:List all projects'
+    'project:Project management commands'
+    'status:Show current tracking status'
+    'export:Export all time tracking data as CSV'
+  )
+  _describe 'commands' commands
+}
+
+_tt_projects() {
+  local projects
+  # Try to get projects from tt projects command, fallback to empty if it fails
+  projects=(${(f)"$(tt projects 2>/dev/null | grep -v '^Projects:' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' 2>/dev/null || echo '')"})
+  if [[ ${#projects[@]} -gt 0 ]]; then
+    _describe 'projects' projects
+  fi
+}
+
+_tt "$@"
