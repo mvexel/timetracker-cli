@@ -119,6 +119,7 @@ I don't use bash, if you do, please submit :)
 
 Add this to your `~/.zshrc` to add your current session to your prompt
 
+```bash
 timetracker_prompt() {
   local tt_status=$(tt status 2>/dev/null)
   if [[ -n "$tt_status" ]]; then
@@ -127,6 +128,7 @@ timetracker_prompt() {
 }
 setopt PROMPT_SUBST
 PROMPT='$(timetracker_prompt)%F{blue}%~%f $ '
+```
 
 #### Completions
 
