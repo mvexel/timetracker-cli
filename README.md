@@ -25,7 +25,6 @@ tt start client-website "fixing responsive layout"
 tt stop
 ```
 
-
 ### Manual Logging
 
 ```bash
@@ -119,13 +118,13 @@ PROMPT='$(timetracker_prompt)%F{blue}%~%f $ '
 
 #### Completions
 
-There's a completions function in `extras/zsh` you can use. This provides completions for the subcommands and options as well as project names. 
-
+There's a completions function in `extras/zsh` you can use. This provides completions for the subcommands and options as well as project names.
 
 ## Data Storage
 
 Time tracking data is stored in your home directory at `~/.timetracker/`:
-- `state.json`: Current tracking session state  
+
+- `state.json`: Current tracking session state
 - `timetracker.csv`: Session entries with date, duration, description, and session ID
 
 ## License

@@ -1,17 +1,20 @@
 #!/usr/bin/env node
 
-import { program } from "commander";
-import { TimeTracker } from "../lib/timetracker.js";
+import { program } from 'commander';
+import { TimeTracker } from '../lib/timetracker.js';
 
 const tracker = new TimeTracker();
 
-program.name("tt").description("A simple command line time tracking tool for developers").version("1.0.0");
+program
+  .name('tt')
+  .description('A simple command line time tracking tool for developers')
+  .version('1.0.0');
 
 program
-  .command("start <project> [description]")
-  .description("Start tracking time for a project")
-  .option("--json", "Output in JSON format")
-  .option("--no-round", "Disable 15-minute rounding")
+  .command('start <project> [description]')
+  .description('Start tracking time for a project')
+  .option('--json', 'Output in JSON format')
+  .option('--no-round', 'Disable 15-minute rounding')
   .action(async (project, description, options) => {
     try {
       await tracker.start(project, description, options);
@@ -22,10 +25,10 @@ program
   });
 
 program
-  .command("stop")
-  .description("Stop tracking time")
-  .option("--json", "Output in JSON format")
-  .option("--no-round", "Disable 15-minute rounding")
+  .command('stop')
+  .description('Stop tracking time')
+  .option('--json', 'Output in JSON format')
+  .option('--no-round', 'Disable 15-minute rounding')
   .action(async (options) => {
     try {
       await tracker.stop(options);
@@ -36,11 +39,11 @@ program
   });
 
 program
-  .command("summary [period]")
-  .description("Show time summary (day|week|month|all, defaults to all)")
-  .option("--project <project>", "Show summary for specific project")
-  .option("--json", "Output in JSON format")
-  .action(async (period = "all", options) => {
+  .command('summary [period]')
+  .description('Show time summary (day|week|month|all, defaults to all)')
+  .option('--project <project>', 'Show summary for specific project')
+  .option('--json', 'Output in JSON format')
+  .action(async (period = 'all', options) => {
     try {
       await tracker.summary(period, null, options);
     } catch (error) {
@@ -50,13 +53,13 @@ program
   });
 
 program
-  .command("log <project_name> <duration> [description]")
-  .description("Log time entry for a project (duration in minutes)")
+  .command('log <project_name> <duration> [description]')
+  .description('Log time entry for a project (duration in minutes)')
   .option(
-    "--day <date>",
-    "Specify the day (YYYY-MM-DD format, defaults to today)",
+    '--day <date>',
+    'Specify the day (YYYY-MM-DD format, defaults to today)',
   )
-  .option("--json", "Output in JSON format")
+  .option('--json', 'Output in JSON format')
   .action(async (project_name, duration, description, options) => {
     try {
       const parsedDuration = parseInt(duration);
@@ -68,15 +71,15 @@ program
   });
 
 program
-  .command("logs [period]")
+  .command('logs [period]')
   .description(
-    "Show log entries for a time period (day|week|month|all, defaults to all)",
+    'Show log entries for a time period (day|week|month|all, defaults to all)',
   )
-  .option("--json", "Output in JSON format")
-  .option("--sessions-only", "Show only start/stop sessions")
-  .option("--manual-only", "Show only manual log entries")
-  .option("--with-descriptions", "Show only entries with descriptions")
-  .action(async (period = "all", options) => {
+  .option('--json', 'Output in JSON format')
+  .option('--sessions-only', 'Show only start/stop sessions')
+  .option('--manual-only', 'Show only manual log entries')
+  .option('--with-descriptions', 'Show only entries with descriptions')
+  .action(async (period = 'all', options) => {
     try {
       await tracker.logs(period, options);
     } catch (error) {
@@ -86,18 +89,25 @@ program
   });
 
 program
-  .command("delete [index] [period]")
-  .description(
-    "Delete log entries by index or project-based criteria",
+  .command('delete [index] [period]')
+  .description('Delete log entries by index or project-based criteria')
+  .option('--project <project>', 'Delete entries for specific project')
+  .option('--last', 'Delete the most recent entry (for project if specified)')
+  .option('--today', 'Delete entries from today (for project if specified)')
+  .option('--week', 'Delete entries from this week (for project if specified)')
+  .option(
+    '--month',
+    'Delete entries from this month (for project if specified)',
   )
-  .option("--project <project>", "Delete entries for specific project")
-  .option("--last", "Delete the most recent entry (for project if specified)")
-  .option("--today", "Delete entries from today (for project if specified)")
-  .option("--week", "Delete entries from this week (for project if specified)")
-  .option("--month", "Delete entries from this month (for project if specified)")
-  .action(async (index, period = "all", options) => {
+  .action(async (index, period = 'all', options) => {
     try {
-      if (options.project || options.last || options.today || options.week || options.month) {
+      if (
+        options.project ||
+        options.last ||
+        options.today ||
+        options.week ||
+        options.month
+      ) {
         await tracker.deleteByProject(options);
       } else {
         const entryIndex = parseInt(index);
@@ -110,10 +120,10 @@ program
   });
 
 program
-  .command("projects")
-  .description("List all projects")
-  .option("--json", "Output in JSON format")
-  .option("--raw", "Output project names only (for shell completion)")
+  .command('projects')
+  .description('List all projects')
+  .option('--json', 'Output in JSON format')
+  .option('--raw', 'Output project names only (for shell completion)')
   .action(async (options) => {
     try {
       await tracker.listProjects(options);
@@ -124,14 +134,14 @@ program
   });
 
 program
-  .command("project")
-  .description("Project management commands")
-  .argument("<action>", "Action: delete")
-  .argument("<name>", "Project name")
-  .option("--json", "Output in JSON format")
+  .command('project')
+  .description('Project management commands')
+  .argument('<action>', 'Action: delete')
+  .argument('<name>', 'Project name')
+  .option('--json', 'Output in JSON format')
   .action(async (action, name, options) => {
     try {
-      if (action === "delete") {
+      if (action === 'delete') {
         await tracker.deleteProject(name, options);
       } else {
         throw new Error(`Unknown action: ${action}. Use 'delete'`);
@@ -143,21 +153,21 @@ program
   });
 
 program
-  .command("status")
-  .description("Show current tracking status for prompt integration")
-  .option("--json", "Output in JSON format")
+  .command('status')
+  .description('Show current tracking status for prompt integration')
+  .option('--json', 'Output in JSON format')
   .action(async (options) => {
     try {
       await tracker.status(options);
-    } catch (error) {
+    } catch {
       // For prompt integration, we want to fail silently
       process.exit(0);
     }
   });
 
 program
-  .command("export")
-  .description("Export all time tracking data as CSV to stdout")
+  .command('export')
+  .description('Export all time tracking data as CSV to stdout')
   .action(async () => {
     try {
       await tracker.export();
@@ -166,7 +176,6 @@ program
       process.exit(1);
     }
   });
-
 
 program.parseAsync().catch((error) => {
   console.error(`Error: ${error.message}`);
