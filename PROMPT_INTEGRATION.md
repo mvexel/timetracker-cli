@@ -1,6 +1,6 @@
-# Prompt Integration Guide
+# Shell Integration Guide
 
-This guide shows how to integrate timetracker status into various shell prompts.
+This guide covers shell integrations for the timetracker CLI, including prompt status display and tab completion.
 
 ## Prerequisites
 
@@ -215,9 +215,195 @@ timetracker_status_cached() {
 }
 ```
 
+# Tab Completion
+
+Shell tab completion makes the CLI much more efficient by auto-completing commands, project names, and options.
+
+## Bash Completion
+
+Create `/etc/bash_completion.d/tt` or add to `~/.bash_completion`:
+
+```bash
+_tt_completion() {
+    local cur prev commands projects periods
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    commands="start stop summary log logs delete projects project status export migrate"
+    periods="day week month all"
+    
+    # Complete project names for certain commands
+    case "${prev}" in
+        start|log)
+            projects=$(tt projects --json 2>/dev/null | jq -r '.[]' 2>/dev/null || echo "")
+            COMPREPLY=($(compgen -W "${projects}" -- ${cur}))
+            return 0
+            ;;
+        --project)
+            projects=$(tt projects --json 2>/dev/null | jq -r '.[]' 2>/dev/null || echo "")
+            COMPREPLY=($(compgen -W "${projects}" -- ${cur}))
+            return 0
+            ;;
+        summary|logs|delete)
+            COMPREPLY=($(compgen -W "${periods}" -- ${cur}))
+            return 0
+            ;;
+        project)
+            COMPREPLY=($(compgen -W "delete" -- ${cur}))
+            return 0
+            ;;
+    esac
+    
+    # Complete options
+    case "${cur}" in
+        --*)
+            local options="--json --project --no-round --sessions-only --manual-only --with-descriptions --last --today --week --month --day"
+            COMPREPLY=($(compgen -W "${options}" -- ${cur}))
+            return 0
+            ;;
+    esac
+    
+    # Complete main commands
+    if [[ ${COMP_CWORD} -eq 1 ]]; then
+        COMPREPLY=($(compgen -W "${commands}" -- ${cur}))
+        return 0
+    fi
+}
+
+complete -F _tt_completion tt
+```
+
+## Zsh Completion
+
+Create `~/.zsh/completions/_tt` (and add `~/.zsh/completions` to your `fpath`):
+
+```zsh
+#compdef tt
+
+_tt() {
+    local context state line
+    
+    _arguments -C \
+        '1:command:->commands' \
+        '*::arg:->args' \
+        '--json[Output in JSON format]' \
+        '--no-round[Disable 15-minute rounding]' \
+        '--project[Specify project]:project:->projects' \
+        '--sessions-only[Show only start/stop sessions]' \
+        '--manual-only[Show only manual log entries]' \
+        '--with-descriptions[Show only entries with descriptions]' \
+        '--last[Delete the most recent entry]' \
+        '--today[Delete entries from today]' \
+        '--week[Delete entries from this week]' \
+        '--month[Delete entries from this month]' \
+        '--day[Specify day]:date:'
+    
+    case $state in
+        commands)
+            local commands=(
+                'start:Start tracking time for a project'
+                'stop:Stop tracking time'
+                'summary:Show time summary'
+                'log:Log time entry for a project'
+                'logs:Show log entries'
+                'delete:Delete log entries'
+                'projects:List all projects'
+                'project:Project management commands'
+                'status:Show current tracking status'
+                'export:Export data as CSV'
+                'migrate:Migrate old format to new format'
+            )
+            _describe 'commands' commands
+            ;;
+        args)
+            case $words[2] in
+                start)
+                    if [[ $CURRENT -eq 3 ]]; then
+                        _alternative 'projects:projects:->projects'
+                    else
+                        _message 'description'
+                    fi
+                    ;;
+                log)
+                    case $CURRENT in
+                        3) _alternative 'projects:projects:->projects' ;;
+                        4) _message 'duration (minutes)' ;;
+                        5) _message 'description' ;;
+                    esac
+                    ;;
+                summary|logs|delete)
+                    if [[ $CURRENT -eq 3 ]]; then
+                        _values 'period' 'day' 'week' 'month' 'all'
+                    fi
+                    ;;
+                project)
+                    if [[ $CURRENT -eq 3 ]]; then
+                        _values 'action' 'delete'
+                    elif [[ $CURRENT -eq 4 ]]; then
+                        _alternative 'projects:projects:->projects'
+                    fi
+                    ;;
+            esac
+            ;;
+        projects)
+            local projects
+            projects=(${(f)"$(tt projects --json 2>/dev/null | jq -r '.[]' 2>/dev/null)"})
+            _describe 'projects' projects
+            ;;
+    esac
+}
+
+_tt "$@"
+```
+
+## Installation
+
+### Bash
+```bash
+# System-wide (requires sudo)
+sudo curl -o /etc/bash_completion.d/tt https://raw.githubusercontent.com/yourusername/timetracker-cli/main/completions/bash_completion
+
+# User-specific
+mkdir -p ~/.bash_completion.d
+curl -o ~/.bash_completion.d/tt https://raw.githubusercontent.com/yourusername/timetracker-cli/main/completions/bash_completion
+echo "source ~/.bash_completion.d/tt" >> ~/.bashrc
+```
+
+### Zsh
+```bash
+# Create completions directory if it doesn't exist
+mkdir -p ~/.zsh/completions
+
+# Download completion file
+curl -o ~/.zsh/completions/_tt https://raw.githubusercontent.com/yourusername/timetracker-cli/main/completions/zsh_completion
+
+# Add to fpath in ~/.zshrc
+echo 'fpath=(~/.zsh/completions $fpath)' >> ~/.zshrc
+echo 'autoload -U compinit && compinit' >> ~/.zshrc
+```
+
+## Features
+
+Tab completion provides:
+
+- **Command completion**: `tt st<TAB>` → `tt start`
+- **Project name completion**: `tt start my<TAB>` → `tt start my-project`
+- **Option completion**: `tt start --<TAB>` → shows available options
+- **Period completion**: `tt summary <TAB>` → `day`, `week`, `month`, `all`
+- **Action completion**: `tt project <TAB>` → `delete`
+
+## Requirements
+
+- **jq**: Required for parsing JSON project lists (`brew install jq` or `apt install jq`)
+- **tt in PATH**: The `tt` command must be available in your shell's PATH
+
 ## Troubleshooting
 
 - **Command not found**: Make sure `tt` is in your PATH or use the full path
 - **Slow prompt**: Consider caching or async execution
 - **No output**: Check that you have an active tracking session with `tt status`
 - **Colors not working**: Ensure your terminal supports colors and escape sequences
+- **Tab completion not working**: 
+  - Verify completion files are in the correct location
+  - Check that `jq` is installed for project name completion
+  - Restart your shell or source your RC file
+  - For zsh, ensure `fpath` includes your completions directory
