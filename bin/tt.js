@@ -177,6 +177,18 @@ program
     }
   });
 
+program
+  .command('edit')
+  .description('Open the timetracker CSV file in vim for editing')
+  .action(async () => {
+    try {
+      await tracker.edit();
+    } catch (error) {
+      console.error(`Error: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
 program.parseAsync().catch((error) => {
   console.error(`Error: ${error.message}`);
   process.exit(1);
