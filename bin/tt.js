@@ -8,7 +8,7 @@ const tracker = new TimeTracker();
 program
   .name('tt')
   .description('A simple command line time tracking tool for developers')
-  .version('1.0.0');
+  .version('1.1.0');
 
 program
   .command('start <project> [description]')
@@ -42,6 +42,7 @@ program
   .command('summary [period]')
   .description('Show time summary (day|week|month|all, defaults to all)')
   .option('--project <project>', 'Show summary for specific project')
+  .option('--month <month>', 'Show summary for a specific month (1-12)')
   .option('--json', 'Output in JSON format')
   .action(async (period = 'all', options) => {
     try {
@@ -75,6 +76,7 @@ program
   .description(
     'Show log entries for a time period (day|week|month|all, defaults to all)',
   )
+  .option('--month <month>', 'Show logs for a specific month (1-12)')
   .option('--json', 'Output in JSON format')
   .option('--sessions-only', 'Show only start/stop sessions')
   .option('--manual-only', 'Show only manual log entries')

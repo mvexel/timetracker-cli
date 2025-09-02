@@ -402,6 +402,7 @@ describe('TimeTracker', () => {
       const entries = await tracker.getLogEntriesForPeriod(
         'day',
         '2025-08-16T14:00:00.000Z',
+        null,
       );
 
       assert.strictEqual(entries.length, 1);
@@ -421,6 +422,7 @@ describe('TimeTracker', () => {
         2,
         'day',
         '2025-08-16T15:00:00.000Z',
+        {},
       );
 
       console.log = log;
@@ -438,7 +440,7 @@ describe('TimeTracker', () => {
       await tracker.log('project-a', 30, { date: '2025-08-16T12:00:00.000Z' });
 
       try {
-        await tracker.deleteEntry(5, 'day', '2025-08-16T15:00:00.000Z');
+        await tracker.deleteEntry(5, 'day', '2025-08-16T15:00:00.000Z', {});
         assert.fail('Should have thrown error');
       } catch (error) {
         assert.ok(error.message.includes('Invalid index'));
@@ -450,7 +452,7 @@ describe('TimeTracker', () => {
 
     it('should handle deleting from empty logs', async () => {
       try {
-        await tracker.deleteEntry(1, 'day', '2025-08-16T15:00:00.000Z');
+        await tracker.deleteEntry(1, 'day', '2025-08-16T15:00:00.000Z', {});
         assert.fail('Should have thrown error');
       } catch (error) {
         assert.ok(error.message.includes('Invalid index'));
@@ -460,7 +462,7 @@ describe('TimeTracker', () => {
     it('should preserve CSV header after deletion', async () => {
       await tracker.log('project-a', 30, { date: '2025-08-16T12:00:00.000Z' });
 
-      await tracker.deleteEntry(1, 'day', '2025-08-16T15:00:00.000Z');
+      await tracker.deleteEntry(1, 'day', '2025-08-16T15:00:00.000Z', {});
 
       const logContent = await fs.readFile(tracker.logFile, 'utf8');
       const lines = logContent.trim().split('\n');
@@ -474,7 +476,7 @@ describe('TimeTracker', () => {
       await tracker.log('project-a', 60, { date: '2025-08-16T13:00:00.000Z' });
       await tracker.log('project-a', 45, { date: '2025-08-16T14:00:00.000Z' });
 
-      await tracker.deleteEntry(2, 'day', '2025-08-16T15:00:00.000Z');
+      await tracker.deleteEntry(2, 'day', '2025-08-16T15:00:00.000Z', {});
 
       const remainingEntries = await tracker.getAllLogEntries();
       assert.strictEqual(remainingEntries.length, 2);
@@ -775,6 +777,101 @@ describe('TimeTracker', () => {
       assert.strictEqual(jsonOutput.deletion.deleted_count, 1);
       assert.strictEqual(jsonOutput.deletion.total_minutes_deleted, 30);
       assert.ok(jsonOutput.deletion.deleted_entries.length === 1);
+    });
+  });
+
+  describe('Month filtering', () => {
+    it('should filter summary by month', async () => {
+      await tracker.log('project-a', 30, { day: '2025-08-16' });
+      await tracker.log('project-b', 60, { day: '2025-08-16' });
+      await tracker.log('project-a', 45, { day: '2025-09-15' });
+
+      let output = '';
+      const log = console.log;
+      console.log = (msg) => (output += msg + '\n');
+
+      await tracker.summary('all', '2025-08-20T12:00:00.000Z', { month: 8 });
+
+      console.log = log;
+
+      assert.ok(output.includes('Time Summary - Month 8:'));
+      assert.ok(output.includes('project-a: 30m'));
+      assert.ok(output.includes('project-b: 1h 0m'));
+      assert.ok(!output.includes('45m'));
+      assert.ok(output.includes('Total: 1h 30m'));
+    });
+
+    it('should filter logs by month', async () => {
+      await tracker.log('project-a', 30, { day: '2025-08-16' });
+      await tracker.log('project-b', 60, { day: '2025-09-15' });
+
+      let output = '';
+      const log = console.log;
+      console.log = (msg) => (output += msg + '\n');
+
+      await tracker.logs('all', { month: 8 }, '2025-08-20T12:00:00.000Z');
+
+      console.log = log;
+
+      assert.ok(output.includes('Log Entries - Month 8:'));
+      assert.ok(output.includes('[1] project-a'));
+      assert.ok(!output.includes('project-b'));
+      assert.ok(output.includes('Total: 30m'));
+    });
+
+    it('should handle invalid month values', async () => {
+      try {
+        await tracker.summary('all', null, { month: 0 });
+        assert.fail('Should have thrown error');
+      } catch (error) {
+        assert.ok(error.message.includes('Invalid month'));
+      }
+
+      try {
+        await tracker.summary('all', null, { month: 13 });
+        assert.fail('Should have thrown error');
+      } catch (error) {
+        assert.ok(error.message.includes('Invalid month'));
+      }
+
+      try {
+        await tracker.summary('all', null, { month: 'invalid' });
+        assert.fail('Should have thrown error');
+      } catch (error) {
+        assert.ok(error.message.includes('Invalid month'));
+      }
+    });
+
+    it('should show no entries for month with no data', async () => {
+      await tracker.log('project-a', 30, { day: '2025-08-16' });
+
+      let output = '';
+      const log = console.log;
+      console.log = (msg) => (output += msg + '\n');
+
+      await tracker.summary('all', null, { month: 1 });
+
+      console.log = log;
+
+      assert.ok(output.includes('Time Summary - Month 1:'));
+      assert.ok(output.includes('No time tracked in this period.'));
+    });
+
+    it('should handle month boundary correctly', async () => {
+      await tracker.log('project-a', 30, { day: '2025-08-31' });
+      await tracker.log('project-b', 60, { day: '2025-09-01' });
+
+      let output = '';
+      const log = console.log;
+      console.log = (msg) => (output += msg + '\n');
+
+      await tracker.summary('all', null, { month: 8 });
+
+      console.log = log;
+
+      assert.ok(output.includes('project-a: 30m'));
+      assert.ok(!output.includes('project-b'));
+      assert.ok(output.includes('Total: 30m'));
     });
   });
 
