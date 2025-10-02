@@ -2,7 +2,7 @@ import assert from 'assert';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { TimeTracker } from '../lib/TimeTracker.js';
+import { TimeTracker } from '../lib/timetracker.js';
 
 describe('TimeTracker', () => {
   const testDir = path.join(os.homedir(), '.timetracker-test');
