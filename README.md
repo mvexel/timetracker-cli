@@ -120,6 +120,12 @@ PROMPT='$(timetracker_prompt)%F{blue}%~%f $ '
 
 There's a completions function in `extras/zsh` you can use. This provides completions for the subcommands and options as well as project names.
 
+See detailed installation instructions in [extras/README.md](extras/README.md) for:
+
+- Homebrew-installed zsh
+- System zsh (macOS default)
+- Oh-My-Zsh
+
 ## Data Storage
 
 Time tracking data is stored in your home directory at `~/.timetracker/`:
