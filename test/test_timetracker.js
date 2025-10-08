@@ -2,7 +2,7 @@ import assert from 'assert';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { TimeTracker } from '../lib/TimeTracker.js';
+import { TimeTracker } from '../lib/timetracker.js';
 
 describe('TimeTracker', () => {
   const testDir = path.join(os.homedir(), '.timetracker-test');
@@ -935,6 +935,124 @@ describe('TimeTracker', () => {
       // Second entry should be the later one (project-b from 2025-08-17)
       assert.ok(lines[2].startsWith('project-b,'));
       assert.ok(lines[2].includes('2025-08-17'));
+    });
+  });
+
+  describe('Project hierarchy', () => {
+    it('should display hierarchical projects with parent and children', async () => {
+      await tracker.log('business', 25);
+      await tracker.log('business/quote', 30);
+      await tracker.log('business/invoicing', 45);
+      await tracker.log('business/admin', 20);
+      await tracker.log('marketing', 60);
+
+      let output = '';
+      const log = console.log;
+      console.log = (msg) => (output += msg + '\n');
+
+      await tracker.listProjects();
+
+      console.log = log;
+
+      // Check hierarchical display
+      assert.ok(output.includes('Projects:'));
+      assert.ok(output.includes('business: 2h 0m'));
+      assert.ok(output.includes('Direct: 25m'));
+      assert.ok(output.includes('  business/admin: 20m'));
+      assert.ok(output.includes('  business/invoicing: 45m'));
+      assert.ok(output.includes('  business/quote: 30m'));
+      assert.ok(output.includes('marketing: 1h 0m'));
+    });
+
+    it('should show hierarchical breakdown when filtering by parent project', async () => {
+      await tracker.log('business', 25);
+      await tracker.log('business/quote', 30);
+      await tracker.log('business/invoicing', 45);
+      await tracker.log('marketing', 60);
+
+      let output = '';
+      const log = console.log;
+      console.log = (msg) => (output += msg + '\n');
+
+      await tracker.summary('all', null, { project: 'business' });
+
+      console.log = log;
+
+      // Check that business projects are included
+      assert.ok(output.includes('business:'));
+      assert.ok(output.includes('business/quote:'));
+      assert.ok(output.includes('business/invoicing:'));
+      // Check that non-business projects are not included
+      assert.ok(!output.includes('marketing'));
+      // Check total is correct
+      assert.ok(output.includes('Total: 1h 40m'));
+    });
+
+    it('should handle projects without parent entries', async () => {
+      await tracker.log('business/quote', 30);
+      await tracker.log('business/invoicing', 45);
+      await tracker.log('marketing', 60);
+
+      let output = '';
+      const log = console.log;
+      console.log = (msg) => (output += msg + '\n');
+
+      await tracker.listProjects();
+
+      console.log = log;
+
+      // Without a parent 'business' entry, they should show as separate projects
+      assert.ok(output.includes('business/quote: 30m'));
+      assert.ok(output.includes('business/invoicing: 45m'));
+      assert.ok(output.includes('marketing: 1h 0m'));
+    });
+
+    it('should calculate totals correctly with multi-level hierarchy', async () => {
+      await tracker.log('company', 10);
+      await tracker.log('company/sales', 20);
+      await tracker.log('company/sales/region-a', 15);
+      await tracker.log('company/sales/region-b', 25);
+
+      let output = '';
+      const log = console.log;
+      console.log = (msg) => (output += msg + '\n');
+
+      await tracker.listProjects();
+
+      console.log = log;
+
+      // company should show total of all including children
+      assert.ok(output.includes('company: 1h 10m'));
+      assert.ok(output.includes('Direct: 10m'));
+      // company/sales should show its total including region children
+      assert.ok(output.includes('  company/sales: 1h 0m'));
+    });
+
+    it('should output hierarchical projects in JSON format', async () => {
+      await tracker.log('business', 25);
+      await tracker.log('business/quote', 30);
+      await tracker.log('business/invoicing', 45);
+
+      let output = '';
+      const log = console.log;
+      console.log = (msg) => (output += msg + '\n');
+
+      await tracker.listProjects({ json: true });
+
+      console.log = log;
+
+      const jsonOutput = JSON.parse(output.trim());
+
+      // Check JSON structure includes hierarchy info
+      assert.ok(jsonOutput.projects);
+      assert.ok(jsonOutput.projects.list);
+      
+      const business = jsonOutput.projects.list.find(p => p.name === 'business');
+      assert.ok(business);
+      assert.strictEqual(business.total_minutes, 100);
+      assert.strictEqual(business.direct_minutes, 25);
+      assert.ok(Array.isArray(business.children));
+      assert.strictEqual(business.children.length, 2);
     });
   });
 });

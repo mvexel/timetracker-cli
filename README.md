@@ -74,6 +74,46 @@ tt projects
 tt project delete myproject. # this is the same as tt delete --project myproject
 ```
 
+#### Project Hierarchy
+
+You can organize projects hierarchically using the `/` separator. For example:
+
+```bash
+# Log time to parent and child projects
+tt log business 30 "General business tasks"
+tt log business/quote 120 "Quote preparation"
+tt log business/invoicing 60 "Invoice processing"
+tt log business/admin 45 "Administrative work"
+```
+
+When viewing projects, the hierarchy is displayed with indentation:
+
+```bash
+tt projects
+```
+
+Output:
+```
+Projects:
+business: 4h 15m (1 entries)
+  Direct: 30m
+  business/admin: 45m (1 entries)
+  business/invoicing: 1h 0m (1 entries)
+  business/quote: 2h 0m (1 entries)
+```
+
+- Parent projects show **total time** (including all subprojects)
+- **Direct:** shows time logged directly to the parent project
+- Child projects are indented and show their individual time
+
+You can filter summaries by parent project to see all related work:
+
+```bash
+tt summary --project business
+```
+
+This will include all `business/*` subprojects in the summary.
+
 ### Deleting Entries
 
 You can delete entries by project, time range, or a combination of both. You can also manually edit the log file.
