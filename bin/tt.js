@@ -54,22 +54,50 @@ program
   });
 
 program
-  .command('log <project_name> <duration> [description]')
-  .description('Log time entry for a project (duration in minutes)')
+  .command(
+    'log <project_name> <duration_or_date> [duration_or_description] [description]',
+  )
+  .description(
+    'Log time entry for a project (duration in minutes), optionally with YYYY-MM-DD date',
+  )
   .option(
     '--day <date>',
     'Specify the day (YYYY-MM-DD format, defaults to today)',
   )
   .option('--json', 'Output in JSON format')
-  .action(async (project_name, duration, description, options) => {
+  .action(
+    async (
+      project_name,
+      duration_or_date,
+      duration_or_description,
+      description,
+      options,
+    ) => {
     try {
-      const parsedDuration = parseInt(duration);
-      await tracker.log(project_name, parsedDuration, description, options);
+      const isDateArgument = /^\d{4}-\d{2}-\d{2}$/.test(duration_or_date);
+      const duration = isDateArgument
+        ? duration_or_description
+        : duration_or_date;
+      const resolvedDescription = isDateArgument
+        ? description
+        : duration_or_description;
+      const parsedDuration = parseInt(duration, 10);
+      const logOptions =
+        isDateArgument && !options.day
+          ? { ...options, day: duration_or_date }
+          : options;
+      await tracker.log(
+        project_name,
+        parsedDuration,
+        resolvedDescription,
+        logOptions,
+      );
     } catch (error) {
       console.error(`Error: ${error.message}`);
       process.exit(1);
     }
-  });
+    },
+  );
 
 program
   .command('logs [period]')
