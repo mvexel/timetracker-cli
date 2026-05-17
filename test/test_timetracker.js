@@ -2,10 +2,13 @@ import assert from 'assert';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { TimeTracker } from '../lib/timetracker.js';
 
 describe('TimeTracker', () => {
   const testDir = path.join(os.homedir(), '.timetracker-test');
+  const execFileAsync = promisify(execFile);
   let tracker;
 
   beforeEach(async () => {
@@ -74,6 +77,46 @@ describe('TimeTracker', () => {
     assert.strictEqual(project, 'test-project');
     assert.strictEqual(date, '2025-08-16');
     assert.strictEqual(parseInt(duration), 30);
+  });
+
+  it('should support positional date in CLI log command', async () => {
+    const cliConfigDir = path.join(testDir, '.timetracker');
+    const cliLogFile = path.join(cliConfigDir, 'timetracker.csv');
+
+    await execFileAsync(
+      process.execPath,
+      [path.join(process.cwd(), 'bin', 'tt.js'), 'log', 'task2', '2025-08-16', '60', 'forgot-to-stop'],
+      { env: { ...process.env, HOME: testDir } },
+    );
+
+    const logContent = await fs.readFile(cliLogFile, 'utf8');
+    const lines = logContent.trim().split('\n');
+    const [project, date, duration, description] = lines[lines.length - 1].split(',');
+
+    assert.strictEqual(project, 'task2');
+    assert.strictEqual(date, '2025-08-16');
+    assert.strictEqual(parseInt(duration, 10), 60);
+    assert.strictEqual(description, 'forgot-to-stop');
+  });
+
+  it('should keep existing CLI log command format working', async () => {
+    const cliConfigDir = path.join(testDir, '.timetracker');
+    const cliLogFile = path.join(cliConfigDir, 'timetracker.csv');
+
+    await execFileAsync(
+      process.execPath,
+      [path.join(process.cwd(), 'bin', 'tt.js'), 'log', 'task2', '45', 'normal-log'],
+      { env: { ...process.env, HOME: testDir } },
+    );
+
+    const logContent = await fs.readFile(cliLogFile, 'utf8');
+    const lines = logContent.trim().split('\n');
+    const [project, date, duration, description] = lines[lines.length - 1].split(',');
+
+    assert.strictEqual(project, 'task2');
+    assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(date));
+    assert.strictEqual(parseInt(duration, 10), 45);
+    assert.strictEqual(description, 'normal-log');
   });
 
   it('should require project name for log', async () => {

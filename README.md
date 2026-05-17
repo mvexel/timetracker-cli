@@ -31,6 +31,9 @@ tt stop
 # Log time for a project (duration in minutes)
 tt log <project_name> <duration_in_minutes> [description]
 
+# Log time for a specific date
+tt log <project_name> <YYYY-MM-DD> <duration_in_minutes> [description]
+
 # Log with description
 tt log myproject 120 "code review session"
 
